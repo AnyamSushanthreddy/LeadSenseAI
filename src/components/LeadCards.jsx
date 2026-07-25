@@ -84,8 +84,17 @@ export default function LeadCards({ leads, onSelectLead, onDeleteLead }) {
 
             <div className="card-stat-item">
               <span className="card-stat-label">Location</span>
-              <span className="card-stat-val" style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                <MapPin size={12} /> {lead.preferredLocation}
+              <span className="card-stat-val">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((lead.slvProject || 'SLV') + ' ' + lead.preferredLocation)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ color: '#4285F4', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}
+                  title="Open location in Google Maps"
+                >
+                  <MapPin size={12} style={{ color: '#EA4335' }} /> {lead.preferredLocation} ↗
+                </a>
               </span>
             </div>
 

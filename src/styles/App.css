@@ -637,6 +637,17 @@
   position: relative;
 }
 
+/* New layout for client portal grid */
+.customer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+
+
+
+
 .lead-card:hover {
   border-color: var(--border-strong);
   transform: translateY(-3px);
