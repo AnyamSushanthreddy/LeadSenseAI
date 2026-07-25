@@ -1,5 +1,5 @@
 # 🏢 LeadSense-AI — Real Estate Lead Intelligence Platform
-
+  >   to lanch an application url ->(https://lead-sense-ai-smrb.vercel.app/) paste url in browser
 > **AI-Powered Real Estate Lead Scoring & Buyer Dossier System**  
 > Custom-Branded & Integrated for **SLV Builders & Developers**  
 > 🔗 Official Partner Site: [SLV Builders & Developers](https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1)
