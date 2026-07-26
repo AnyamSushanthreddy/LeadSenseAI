@@ -54,8 +54,8 @@ export default function App() {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const uid = firebaseUser.uid;
-        const initialLeads = getCloudUserLeads(uid);
         const isAgent = firebaseUser.email?.toLowerCase() === 'agent@slvbuilders.com';
+        const initialLeads = getCloudUserLeads(uid, isAgent);
 
         const userSession = {
           uid,
@@ -81,23 +81,25 @@ export default function App() {
     if (!currentUser || !currentUser.uid) return;
 
     const userUid = currentUser.uid;
-    const initialLeads = getCloudUserLeads(userUid);
+    const isAgent = currentUser.role === 'agent';
+    const initialLeads = getCloudUserLeads(userUid, isAgent);
     setLeads(initialLeads);
 
-    const unsubscribeSync = subscribeToCloudSync(userUid, (updatedLeads) => {
+    const unsubscribeSync = subscribeToCloudSync(userUid, isAgent, (updatedLeads) => {
       setLeads(updatedLeads);
     });
 
     return () => unsubscribeSync();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, currentUser?.role]);
 
   // Login handler
   const handleLoginSuccess = (userSession) => {
     const userUid = userSession.uid || `uid_${Date.now()}`;
+    const isAgent = userSession.role === 'agent';
     const userWithUid = { ...userSession, uid: userUid };
     
-    // Fetch and bind cloud data for this UID
-    const cloudLeads = getCloudUserLeads(userUid);
+    // Fetch and bind cloud data for this UID and role
+    const cloudLeads = getCloudUserLeads(userUid, isAgent);
     setLeads(cloudLeads);
     
     if (userWithUid.role === 'customer' && !userWithUid.customerData && cloudLeads.length > 0) {
