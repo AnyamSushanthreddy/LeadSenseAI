@@ -157,25 +157,6 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
     }
   };
 
-  const handleQuickDemoCustomer = (customerEmail) => {
-    const customer = leads.find(l => l.email.toLowerCase() === customerEmail.toLowerCase());
-    if (customer) {
-      onLoginSuccess({
-        role: 'customer',
-        customerData: customer
-      });
-    }
-  };
-
-  const handleQuickDemoAgent = () => {
-    onLoginSuccess({
-      role: 'agent',
-      name: 'SLV Sales Director',
-      email: 'agent@slvbuilders.com',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
-    });
-  };
-
   return (
     <div className="login-page-container">
       <div className="login-card" style={{ maxWidth: authMode === 'register' ? '560px' : '480px' }}>
@@ -300,37 +281,6 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
                 <ArrowRight size={16} />
               </button>
             </form>
-
-            {/* Instant Demo Sign-In Shortcuts */}
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.6rem' }}>
-                Instant 1-Click Demo Sign-In ({role === 'agent' ? 'Agent Mode' : 'Client Mode'})
-              </div>
-              {role === 'agent' ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
-                  onClick={handleQuickDemoAgent}
-                >
-                  <ShieldCheck size={14} /> Sign In as Demo SLV Agent
-                </button>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  {leads.slice(0, 3).map((demoLead) => (
-                    <button
-                      key={demoLead.id}
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.4rem 0.5rem', textAlign: 'center', whiteSpace: 'nowrap' }}
-                      onClick={() => handleQuickDemoCustomer(demoLead.email)}
-                    >
-                      👤 {demoLead.name.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </>
         )}
 
