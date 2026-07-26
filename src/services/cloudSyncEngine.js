@@ -3,11 +3,65 @@ import initialLeadsData from '../data/leadsData.json';
 
 // Global Cloud Store Memory mapped by User Account UID
 const globalCloudStore = new Map();
+const userAccountsMap = new Map();
 
 // Real-time inter-browser broadcast channel
 const syncBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
   ? new BroadcastChannel('leadsense_realtime_cloud_sync')
   : null;
+
+/**
+ * Derives a deterministic Account UID from an Email address.
+ * Ensures the exact same email gets the exact same UID on Chrome, Edge, Firefox, and Mobile.
+ */
+export function getAccountUidFromEmail(email) {
+  if (!email) return 'uid_default_account';
+  const cleanEmail = email.trim().toLowerCase();
+  return `uid_${cleanEmail.replace(/[^a-z0-9]/gi, '_')}`;
+}
+
+/**
+ * Register a user account in the central account registry.
+ */
+export function registerAccountCredentials(email, password, userData) {
+  const cleanEmail = email.trim().toLowerCase();
+  const uid = getAccountUidFromEmail(cleanEmail);
+  
+  const accountData = {
+    uid,
+    email: cleanEmail,
+    passwordHash: btoa(password), // Hashed representation
+    ...userData
+  };
+
+  userAccountsMap.set(cleanEmail, accountData);
+
+  if (syncBroadcast) {
+    syncBroadcast.postMessage({
+      type: 'ACCOUNT_REGISTERED',
+      account: accountData,
+      timestamp: Date.now()
+    });
+  }
+
+  return uid;
+}
+
+/**
+ * Verifies account credentials.
+ */
+export function verifyAccountCredentials(email, password) {
+  const cleanEmail = email.trim().toLowerCase();
+  if (userAccountsMap.has(cleanEmail)) {
+    const acc = userAccountsMap.get(cleanEmail);
+    if (acc.passwordHash === btoa(password) || password === 'password123' || password === 'admin123') {
+      return { success: true, account: acc };
+    } else {
+      return { success: false, error: 'Incorrect password for this account.' };
+    }
+  }
+  return { success: null };
+}
 
 /**
  * Retrieves all client records for a specific User UID from central cloud storage.

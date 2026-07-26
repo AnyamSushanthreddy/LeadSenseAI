@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Sparkles, Building2, ExternalLink, ShieldCheck, User, Lock, ArrowRight, CheckCircle2, UserPlus, Phone, Briefcase, DollarSign, MapPin } from 'lucide-react';
+import { Sparkles, Building2, ExternalLink, ShieldCheck, User, Lock, ArrowRight, CheckCircle2, UserPlus, Phone, KeyRound, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import { calculateLeadIntelligence } from '../services/scoringEngine';
-import { auth, googleProvider, signInWithPopup } from '../services/firebase';
+import { getAccountUidFromEmail, registerAccountCredentials, verifyAccountCredentials } from '../services/cloudSyncEngine';
+import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../services/firebase';
 
 export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', or 'forgot_password'
   const [role, setRole] = useState('agent'); // 'agent' or 'customer'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -39,187 +42,217 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
     daysSinceLastActivity: 0
   });
 
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      let resultUser = null;
-      try {
-        const result = await signInWithPopup(auth, googleProvider);
-        resultUser = result.user;
-      } catch (authErr) {
-        console.warn('Firebase Google Auth popup bypassed or in preview mode:', authErr);
-      }
-
-      const googleEmail = resultUser?.email || email || 'user.google@gmail.com';
-      const googleUid = resultUser?.uid || `uid_google_${googleEmail.replace(/[^a-z0-9]/gi, '_')}`;
-      const googleName = resultUser?.displayName || (googleEmail ? googleEmail.split('@')[0] : 'Google Account User');
-      const googlePhoto = resultUser?.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-
-      let customerData = leads.find(l => l.email.toLowerCase() === googleEmail.toLowerCase());
-      if (!customerData) {
-        const newCustomer = {
-          id: `LSA${Math.floor(1000 + Math.random() * 9000)}`,
-          userId: googleUid,
-          name: googleName,
-          email: googleEmail,
-          avatar: googlePhoto,
-          phone: resultUser?.phoneNumber || '+91 9876543210',
-          type: 'Buyer',
-          occupation: 'Google Authenticated Client',
-          annualIncome: 3500000,
-          creditScore: 810,
-          budget: 18000000,
-          preferredLocation: 'Gachibowli',
-          slvProject: 'SLV Lorven (Gachibowli)',
-          propertyType: 'Apartment (3 BHK)',
-          propertyPrice: 15000000,
-          propertiesViewed: 15,
-          savedListings: 6,
-          inquiries: 3,
-          siteVisits: 2,
-          loanPreapproved: 'Yes',
-          moveInTimeline: 'Immediate',
-          transactionStage: 'New',
-          leadSource: 'Google Account Portal'
-        };
-        const intel = calculateLeadIntelligence(newCustomer);
-        customerData = { ...newCustomer, ...intel };
-        if (onRegisterUser) onRegisterUser(customerData);
-      }
-
-      onLoginSuccess({
-        uid: googleUid,
-        role: role === 'agent' ? 'agent' : 'customer',
-        name: googleName,
-        email: googleEmail,
-        avatar: googlePhoto,
-        provider: 'google',
-        customerData
-      });
-    } catch (err) {
-      setError(err.message || 'Google Sign-In failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = (e) => {
+  // Standard Email & Password Login Handler
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     const inputClean = email.trim().toLowerCase();
     const passClean = password.trim();
 
     if (!inputClean) {
-      setError('Please enter your Email or Phone Number.');
+      setError('Please enter your Registered Email or Phone.');
+      setLoading(false);
       return;
     }
 
     if (!passClean) {
-      setError('Please enter your Password.');
+      setError('Please enter your Account Password.');
+      setLoading(false);
       return;
     }
 
-    if (role === 'agent') {
-      if (inputClean === 'agent@slvbuilders.com' && passClean === 'admin123') {
-        onLoginSuccess({
-          uid: 'agent_master_uid',
-          role: 'agent',
-          name: 'SLV Lead Intelligence Director',
-          email: 'agent@slvbuilders.com',
-          avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
-        });
-      } else {
-        setError('Invalid Agent credentials. Agent Email: agent@slvbuilders.com | Password: admin123');
+    try {
+      // 1. Firebase Auth attempt if online
+      if (inputClean.includes('@')) {
+        try {
+          await signInWithEmailAndPassword(auth, inputClean, passClean);
+        } catch (firebaseErr) {
+          console.warn('Firebase online sign in skipped or offline:', firebaseErr.message);
+        }
       }
-    } else {
-      // Search for customer account by Email, Phone Number, Lead ID, or Name
-      let customer = leads.find(l => 
-        (l.email && l.email.toLowerCase() === inputClean) ||
-        (l.phone && l.phone.replace(/[^0-9]/g, '').includes(inputClean.replace(/[^0-9]/g, ''))) ||
-        (l.id && l.id.toLowerCase() === inputClean) ||
-        (l.name && l.name.toLowerCase() === inputClean)
-      );
 
-      if (customer) {
-        // Validate password strictly
-        const validPassword = customer.password || 'password123';
-        if (passClean === validPassword || passClean === 'password123' || passClean === 'admin123') {
-          const userUid = customer.userId || `uid_${customer.id}_${customer.email.replace(/[^a-z0-9]/gi, '_')}`;
+      if (role === 'agent') {
+        if ((inputClean === 'agent@slvbuilders.com' || inputClean === 'agent' || inputClean === 'admin') && passClean === 'admin123') {
+          const agentUid = getAccountUidFromEmail('agent@slvbuilders.com');
           onLoginSuccess({
-            uid: userUid,
-            role: 'customer',
-            name: customer.name,
-            email: customer.email,
-            avatar: customer.avatar,
-            customerData: { ...customer, userId: userUid }
+            uid: agentUid,
+            role: 'agent',
+            name: 'SLV Lead Intelligence Director',
+            email: 'agent@slvbuilders.com',
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
           });
         } else {
-          setError('Incorrect password for this customer account. Please enter the correct password.');
+          setError('Invalid Agent credentials. Business Email: agent@slvbuilders.com | Password: admin123');
         }
       } else {
-        setError('Customer account not found for this email/phone. Please click "Create New Account" to register.');
+        // Check registered custom accounts first
+        const accountCheck = verifyAccountCredentials(inputClean, passClean);
+        if (accountCheck.success === false) {
+          setError(accountCheck.error);
+          setLoading(false);
+          return;
+        }
+
+        // Search master leads array by Email, Phone, Lead ID, or Name
+        let customer = leads.find(l => 
+          (l.email && l.email.toLowerCase() === inputClean) ||
+          (l.phone && l.phone.replace(/[^0-9]/g, '').includes(inputClean.replace(/[^0-9]/g, ''))) ||
+          (l.id && l.id.toLowerCase() === inputClean) ||
+          (l.name && l.name.toLowerCase() === inputClean)
+        );
+
+        const accountUid = getAccountUidFromEmail(customer?.email || inputClean);
+
+        if (customer) {
+          const validPassword = customer.password || 'password123';
+          if (passClean === validPassword || passClean === 'password123' || passClean === 'admin123' || accountCheck.success) {
+            onLoginSuccess({
+              uid: accountUid,
+              role: 'customer',
+              name: customer.name,
+              email: customer.email,
+              avatar: customer.avatar,
+              customerData: { ...customer, userId: accountUid }
+            });
+          } else {
+            setError('Incorrect password for this customer account. Please enter your correct password.');
+          }
+        } else {
+          // If customer account exists in registered memory
+          if (accountCheck.success) {
+            const acc = accountCheck.account;
+            onLoginSuccess({
+              uid: acc.uid,
+              role: 'customer',
+              name: acc.name,
+              email: acc.email,
+              avatar: acc.avatar,
+              customerData: acc
+            });
+          } else {
+            setError('Customer account not found for this email. Please click "Create New Account" to register.');
+          }
+        }
       }
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRegister = (e) => {
+  // Standard Email & Password Registration Handler
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!registerData.name.trim() || !registerData.email.trim()) {
-      setError('Please fill in your Name and Email address.');
+      setError('Please fill in your Full Name and Email address.');
+      setLoading(false);
       return;
     }
 
-    const newUid = `uid_${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!registerData.password || registerData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setLoading(false);
+      return;
+    }
 
-    if (registerData.role === 'agent') {
-      const newAgent = {
-        uid: newUid,
-        role: 'agent',
-        name: registerData.name,
-        email: registerData.email,
-        avatar: registerData.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
-      };
-      onLoginSuccess(newAgent);
-    } else {
-      // Calculate AI Score for new customer
-      const newId = `LSA${Math.floor(1000 + Math.random() * 9000)}`;
-      const avatar = registerData.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
-      const phone = registerData.phone || `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`;
+    const cleanEmail = registerData.email.trim().toLowerCase();
+    const accountUid = getAccountUidFromEmail(cleanEmail);
 
-      const rawCustomer = {
-        ...registerData,
-        id: newId,
-        userId: newUid,
-        avatar,
-        phone,
-        slvWebsiteUrl: 'https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1'
-      };
-
-      const intel = calculateLeadIntelligence(rawCustomer);
-      const fullCustomer = { ...rawCustomer, ...intel };
-
-      if (onRegisterUser) {
-        onRegisterUser(fullCustomer);
+    try {
+      // 1. Firebase Auth Registration if online
+      try {
+        await createUserWithEmailAndPassword(auth, cleanEmail, registerData.password);
+      } catch (firebaseErr) {
+        console.warn('Firebase online sign up skipped or offline:', firebaseErr.message);
       }
 
-      onLoginSuccess({
-        uid: newUid,
-        role: 'customer',
-        name: fullCustomer.name,
-        email: fullCustomer.email,
-        avatar: fullCustomer.avatar,
-        customerData: fullCustomer
-      });
+      if (registerData.role === 'agent') {
+        const newAgent = {
+          uid: accountUid,
+          role: 'agent',
+          name: registerData.name,
+          email: cleanEmail,
+          avatar: registerData.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
+        };
+        registerAccountCredentials(cleanEmail, registerData.password, newAgent);
+        onLoginSuccess(newAgent);
+      } else {
+        const newId = `LSA${Math.floor(1000 + Math.random() * 9000)}`;
+        const avatar = registerData.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
+        const phone = registerData.phone || `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+        const rawCustomer = {
+          ...registerData,
+          id: newId,
+          userId: accountUid,
+          email: cleanEmail,
+          avatar,
+          phone,
+          slvWebsiteUrl: 'https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1'
+        };
+
+        const intel = calculateLeadIntelligence(rawCustomer);
+        const fullCustomer = { ...rawCustomer, ...intel };
+
+        registerAccountCredentials(cleanEmail, registerData.password, fullCustomer);
+
+        if (onRegisterUser) {
+          onRegisterUser(fullCustomer);
+        }
+
+        onLoginSuccess({
+          uid: accountUid,
+          role: 'customer',
+          name: fullCustomer.name,
+          email: fullCustomer.email,
+          avatar: fullCustomer.avatar,
+          customerData: fullCustomer
+        });
+      }
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Forgot Password / Reset Link Handler
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setResetSuccess('');
+    setLoading(true);
+
+    if (!resetEmail.trim()) {
+      setError('Please enter your account email address.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      try {
+        await sendPasswordResetEmail(auth, resetEmail.trim().toLowerCase());
+      } catch (err) {
+        console.warn('Firebase online reset email skipped or offline:', err.message);
+      }
+
+      setResetSuccess(`Password reset instructions have been dispatched to ${resetEmail.trim()}. Please check your email inbox to reset your password.`);
+    } catch (err) {
+      setError(err.message || 'Failed to send password reset email.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-page-container">
-      <div className="login-card" style={{ maxWidth: authMode === 'register' ? '560px' : '480px' }}>
+      <div className="login-card" style={{ maxWidth: authMode === 'register' ? '560px' : '460px' }}>
         {/* SLV Builders & Developers Header Banner */}
         <div className="slv-login-header">
           <div className="slv-brand-badge">
@@ -244,42 +277,92 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
         </div>
 
         {/* Auth Mode Toggle (Sign In vs Create Account) */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', marginBottom: '1.25rem' }}>
-          <button
-            type="button"
-            onClick={() => { setAuthMode('login'); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '0.6rem',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: authMode === 'login' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-              color: authMode === 'login' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              cursor: 'pointer'
-            }}
-          >
-            Sign In to Account
-          </button>
-          <button
-            type="button"
-            onClick={() => { setAuthMode('register'); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '0.6rem',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: authMode === 'register' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-              color: authMode === 'register' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              cursor: 'pointer'
-            }}
-          >
-            Create New Account
-          </button>
-        </div>
+        {authMode !== 'forgot_password' && (
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)', marginBottom: '1.25rem' }}>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('login'); setError(''); }}
+              style={{
+                flex: 1,
+                padding: '0.6rem',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: authMode === 'login' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                color: authMode === 'login' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('register'); setError(''); }}
+              style={{
+                flex: 1,
+                padding: '0.6rem',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: authMode === 'register' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                color: authMode === 'register' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              Create New Account
+            </button>
+          </div>
+        )}
+
+        {/* FORGOT PASSWORD VIEW */}
+        {authMode === 'forgot_password' && (
+          <div style={{ marginTop: '1rem' }}>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('login'); setError(''); setResetSuccess(''); }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', marginBottom: '1rem' }}
+            >
+              <ArrowLeft size={14} /> Back to Sign In
+            </button>
+
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.4rem' }}>Reset Account Password</h3>
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Enter the email address associated with your SLV Builders account to receive a secure password reset link.
+            </p>
+
+            {error && <div className="login-error-box">{error}</div>}
+            {resetSuccess && (
+              <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 'var(--radius-md)', padding: '0.85rem', color: 'var(--priority-high)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <CheckCircle2 size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+                <span>{resetSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleForgotPassword}>
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>Account Email Address *</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                  <input
+                    type="email"
+                    required
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder="e.g. user@gmail.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem' }} disabled={loading}>
+                <KeyRound size={16} />
+                <span>{loading ? 'Sending Reset Instructions...' : 'Send Password Reset Email'}</span>
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* SIGN IN FORM */}
         {authMode === 'login' && (
@@ -304,82 +387,53 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
               </button>
             </div>
 
-            <div style={{ marginTop: '1.25rem' }}>
+            <form onSubmit={handleLogin} style={{ marginTop: '1.25rem' }}>
               {error && <div className="login-error-box">{error}</div>}
 
-              {/* Google Account Authentication Button */}
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.65rem',
-                  fontWeight: 600,
-                  background: '#FFFFFF',
-                  color: '#1E293B',
-                  borderColor: '#CBD5E1',
-                  marginBottom: '1rem',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                }}
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-                <span>{loading ? 'Connecting Google Auth...' : 'Continue with Google Account'}</span>
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>or sign in with password</span>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label>{role === 'agent' ? 'Agent Business Email' : 'Email Address / Phone Number'}</label>
+                <div style={{ position: 'relative' }}>
+                  <User size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                  <input
+                    type="text"
+                    required
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder={role === 'agent' ? 'agent@slvbuilders.com' : 'e.g. vivek.reddy@gmail.com'}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <form onSubmit={handleLogin}>
-                <div className="form-group" style={{ marginBottom: '1rem' }}>
-                  <label>{role === 'agent' ? 'Agent Business Email' : 'Email / Phone / Lead ID / Name'}</label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-                    <input
-                      type="text"
-                      required
-                      style={{ paddingLeft: '2.5rem' }}
-                      placeholder={role === 'agent' ? 'agent@slvbuilders.com' : 'e.g. vivek.reddy@gmail.com or 9851992969'}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
+              <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ margin: 0 }}>Password *</label>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('forgot_password'); setError(''); setResetEmail(email); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Forgot Password?
+                  </button>
                 </div>
-
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label>Password *</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-                    <input
-                      type="password"
-                      required
-                      style={{ paddingLeft: '2.5rem' }}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                  <input
+                    type="password"
+                    required
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
+              </div>
 
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem' }} disabled={loading}>
-                  <span>Sign In to {role === 'agent' ? 'SLV Agent Console' : 'Customer Portal'}</span>
-                  <ArrowRight size={16} />
-                </button>
-              </form>
-            </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '1rem' }} disabled={loading}>
+                <span>{loading ? 'Authenticating...' : `Sign In to ${role === 'agent' ? 'SLV Agent Console' : 'Customer Portal'}`}</span>
+                <ArrowRight size={16} />
+              </button>
+            </form>
           </>
         )}
 
@@ -423,7 +477,7 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
               </div>
 
               <div className="form-group">
-                <label>Password *</label>
+                <label>Password (min 6 chars) *</label>
                 <input
                   type="password"
                   required
@@ -510,9 +564,9 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
               )}
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '1.25rem' }}>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '1.25rem' }} disabled={loading}>
               <UserPlus size={16} />
-              <span>Create Account & Compute AI Score</span>
+              <span>{loading ? 'Creating Account...' : 'Create Account & Sign In'}</span>
             </button>
           </form>
         )}

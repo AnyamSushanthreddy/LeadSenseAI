@@ -1,10 +1,9 @@
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   updateProfile
@@ -24,7 +23,7 @@ import {
   enableIndexedDbPersistence
 } from 'firebase/firestore';
 
-// Universal Cloud Firebase Configuration
+// Universal Cloud Firebase Backend Configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB-DemoKeyLeadSenseAI2026",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "leadsense-ai-app.firebaseapp.com",
@@ -38,7 +37,6 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
 
 // Enable offline persistence
 try {
@@ -46,9 +44,9 @@ try {
 } catch (e) {}
 
 export {
-  signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   updateProfile,
