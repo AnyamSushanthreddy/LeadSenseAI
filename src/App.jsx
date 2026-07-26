@@ -102,8 +102,13 @@ export default function App() {
     const cloudLeads = getCloudUserLeads(userUid, isAgent);
     setLeads(cloudLeads);
     
-    if (userWithUid.role === 'customer' && !userWithUid.customerData && cloudLeads.length > 0) {
-      userWithUid.customerData = cloudLeads[0];
+    if (userWithUid.role === 'customer') {
+      const match = cloudLeads.find(l => 
+        (l.email && l.email.toLowerCase() === userWithUid.email?.toLowerCase()) || 
+        l.userId === userUid || 
+        l.id === userUid
+      );
+      userWithUid.customerData = match || userSession.customerData || cloudLeads[0];
     }
     
     setCurrentUser(userWithUid);
@@ -325,7 +330,7 @@ export default function App() {
           />
           <main className="main-content">
             <CustomerPortal
-              customer={currentUser.customerData || (leads && leads.length > 0 ? leads[0] : null)}
+              customer={currentUser.customerData || (leads && leads.find(l => l.email?.toLowerCase() === currentUser.email?.toLowerCase() || l.userId === currentUser.uid)) || leads[0]}
               onLogout={handleLogout}
               onUpdateCustomer={handleUpdateCustomer}
               onDeleteCustomer={handleDeleteLead}

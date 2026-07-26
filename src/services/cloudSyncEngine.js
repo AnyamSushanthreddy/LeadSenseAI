@@ -88,7 +88,7 @@ export function registerAccountCredentials(email, password, userData) {
   userAccountsMap.set(cleanEmail, accountData);
   persistUserAccounts();
 
-  // Also save customer data as a lead in central master database so Admin Portal sees it immediately
+  // Save customer data as a lead in central master database so Admin Portal sees it immediately
   if (userData && (userData.role === 'customer' || userData.id)) {
     const leadId = userData.id || `LSA${Math.floor(1000 + Math.random() * 9000)}`;
     const intel = calculateLeadIntelligence(userData);
@@ -132,7 +132,7 @@ export function verifyAccountCredentials(email, password) {
 /**
  * Retrieves client records from central cloud database.
  * If isAgent === true -> Returns ALL client records in central database.
- * If isAgent === false -> Returns client records matching the specific User UID or Email.
+ * If isAgent === false -> Returns client records with the logged-in user's profile placed at index 0.
  */
 export function getCloudUserLeads(userId, isAgent = false) {
   const allLeads = Array.from(masterLeadsRegistry.values());
@@ -143,14 +143,33 @@ export function getCloudUserLeads(userId, isAgent = false) {
 
   if (!userId) return allLeads;
 
-  // Filter leads owned by or matching this user account
-  const userLeads = allLeads.filter(l => l.userId === userId || l.id === userId);
-  
-  if (userLeads.length > 0) {
-    return userLeads;
+  // Search by userId, email, or account map
+  let matchedUserAccount = null;
+
+  // Search registered accounts map first
+  for (const [email, acc] of userAccountsMap.entries()) {
+    if (acc.uid === userId || getAccountUidFromEmail(email) === userId) {
+      matchedUserAccount = acc;
+      break;
+    }
   }
 
-  // If new user with no custom leads yet, return all master leads tagged with userId
+  // Search master leads array
+  let matchedLead = allLeads.find(l => l.userId === userId || l.id === userId || (matchedUserAccount && l.email?.toLowerCase() === matchedUserAccount.email?.toLowerCase()));
+
+  if (!matchedLead && matchedUserAccount) {
+    const leadId = matchedUserAccount.id || `LSA${Math.floor(1000 + Math.random() * 9000)}`;
+    const intel = calculateLeadIntelligence(matchedUserAccount);
+    matchedLead = { ...matchedUserAccount, id: leadId, userId, ...intel };
+    masterLeadsRegistry.set(leadId, matchedLead);
+    persistMasterLeads();
+  }
+
+  if (matchedLead) {
+    const remainingLeads = allLeads.filter(l => l.id !== matchedLead.id);
+    return [matchedLead, ...remainingLeads];
+  }
+
   return allLeads.map(l => ({ ...l, userId }));
 }
 
