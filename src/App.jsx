@@ -116,15 +116,19 @@ export default function App() {
 
   // Distinct locations for filter dropdown
   const locations = useMemo(() => {
-    const setLocs = new Set(leads.map(l => l.preferredLocation));
+    const safeLeads = Array.isArray(leads) ? leads : [];
+    const setLocs = new Set(safeLeads.filter(l => l && l.preferredLocation).map(l => l.preferredLocation));
     return Array.from(setLocs).sort();
   }, [leads]);
 
   // Filter & Sort Logic
   const filteredLeads = useMemo(() => {
-    return leads.filter(l => {
+    const safeLeads = Array.isArray(leads) ? leads : [];
+    return safeLeads.filter(l => {
+      if (!l) return false;
+
       // Search term (Name, ID, Occupation, Location)
-      if (searchTerm.trim()) {
+      if (searchTerm && searchTerm.trim()) {
         const queryStr = searchTerm.toLowerCase();
         const matchName = l.name?.toLowerCase().includes(queryStr);
         const matchId = l.id?.toLowerCase().includes(queryStr);
@@ -147,8 +151,9 @@ export default function App() {
 
       return true;
     }).sort((a, b) => {
+      if (!a || !b) return 0;
       if (sortBy === 'score_desc') return (b.leadScore || 0) - (a.leadScore || 0);
-      if (sortBy === 'conversion_desc') return (b.conversionProbabilityVal || parseInt(b.conversionProbability || 0)) - (a.conversionProbabilityVal || parseInt(a.conversionProbability || 0));
+      if (sortBy === 'conversion_desc') return (b.conversionProbabilityVal || parseInt(b.conversionProbability || 0) || 0) - (a.conversionProbabilityVal || parseInt(a.conversionProbability || 0) || 0);
       if (sortBy === 'budget_desc') return (b.budget || 0) - (a.budget || 0);
       if (sortBy === 'income_desc') return (b.annualIncome || 0) - (a.annualIncome || 0);
       if (sortBy === 'recency_asc') return (a.daysSinceLastActivity || 0) - (b.daysSinceLastActivity || 0);

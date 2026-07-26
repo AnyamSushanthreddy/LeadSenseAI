@@ -8,6 +8,17 @@
  */
 
 export function calculateLeadIntelligence(lead) {
+  if (!lead) return {
+    intentScore: 50,
+    affordabilityScore: 50,
+    locationFitScore: 50,
+    readinessScore: 50,
+    leadScore: 50,
+    priority: 'Medium',
+    conversionProbability: '50%',
+    conversionProbabilityVal: 50,
+    recommendedNextAction: 'Contact Lead'
+  };
   // 1. Intent Score Calculation
   const viewed = Math.min(lead.propertiesViewed || 0, 30); // max 30
   const saved = Math.min(lead.savedListings || 0, 15); // max 15
