@@ -545,21 +545,6 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
                       onChange={(e) => setRegisterData({ ...registerData, budget: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
-
-                  <div className="form-group">
-                    <label>Target SLV Project</label>
-                    <select
-                      value={registerData.slvProject}
-                      onChange={(e) => setRegisterData({ ...registerData, slvProject: e.target.value })}
-                    >
-                      <option value="SLV Lorven (Gachibowli)">SLV Lorven (Gachibowli)</option>
-                      <option value="SLV Paradise (HITECH City)">SLV Paradise (HITECH City)</option>
-                      <option value="SLV Residency (Kondapur)">SLV Residency (Kondapur)</option>
-                      <option value="SLV Green Meadows (Tellapur)">SLV Green Meadows (Tellapur)</option>
-                      <option value="SLV Prime Heights (Financial District)">SLV Prime Heights (Financial District)</option>
-                      <option value="SLV Signature Villas (Jubilee Hills)">SLV Signature Villas (Jubilee Hills)</option>
-                    </select>
-                  </div>
                 </>
               )}
             </div>

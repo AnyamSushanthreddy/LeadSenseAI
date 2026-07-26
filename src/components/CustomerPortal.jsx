@@ -329,7 +329,7 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px' }}>
                   <span className="badge badge-high">{customer.type}</span>
-                  <span className="badge badge-medium">{customer.slvProject}</span>
+                  <span className="badge badge-medium">✨ {intel.predictedProject || customer.slvProject}</span>
                 </div>
               </div>
             </div>
@@ -359,23 +359,54 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
               </form>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', background: 'var(--bg-app)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', fontSize: '0.85rem' }}>
-              <div>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Annual Income</span>
-                <div style={{ fontWeight: 600, marginTop: '2px' }}>{formatINR(customer.annualIncome)}</div>
+            {/* AI Predicted SLV Project Match Banner */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(16,185,129,0.08) 100%)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent-primary)' }}>
+                    AI Predicted SLV Property Match
+                  </span>
+                </div>
+                <span className="badge badge-high" style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}>
+                  {intel.conversionProbability} Match Confidence
+                </span>
               </div>
-              <div>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Max Investment Budget</span>
-                <div style={{ fontWeight: 600, marginTop: '2px' }}>{formatINR(customer.budget)}</div>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Credit Score</span>
-                <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--priority-high)' }}>{customer.creditScore} (Excellent)</div>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Bank Pre-Approval</span>
-                <div style={{ fontWeight: 600, marginTop: '2px', color: customer.loanPreapproved === 'Yes' ? 'var(--priority-high)' : 'var(--priority-medium)' }}>
-                  {customer.loanPreapproved === 'Yes' ? 'Pre-Approved ✓' : 'Pending Verification'}
+
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                {intel.predictedProject || customer.slvProject}
+              </h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.85rem' }}>
+                Algorithm match predicted from your 4 financial metrics, browsed projects & site visits:
+              </p>
+
+              {/* 4 Prediction Factors Breakdown */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', background: 'var(--bg-app)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>1. Annual Income</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{formatINR(customer.annualIncome)}</div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>2. Max Investment Budget</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{formatINR(customer.budget)}</div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>3. Credit Score</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px', color: 'var(--priority-high)' }}>{customer.creditScore}</div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>4. Bank Pre-Approval</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px', color: customer.loanPreapproved === 'Yes' ? 'var(--priority-high)' : 'var(--priority-medium)' }}>
+                    {customer.loanPreapproved === 'Yes' ? 'Pre-Approved ✓' : 'Pending Verification'}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>Browsed Projects</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{totalViewCount} views</div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>Site Visits Done</span>
+                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{customer.siteVisits || 0} visits</div>
                 </div>
               </div>
             </div>
