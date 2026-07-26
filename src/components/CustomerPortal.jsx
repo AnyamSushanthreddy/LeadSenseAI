@@ -633,8 +633,8 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
                     className="custom-select"
                     style={{ width: '100%', padding: '0.45rem 2rem 0.45rem 0.65rem', fontSize: '0.85rem' }}
                   >
-                    {SLV_PROJECTS.map(proj => (
-                      <option key={proj} value={proj}>{proj}</option>
+                    {SLV_PROJECT_CATALOGUE.map(proj => (
+                      <option key={proj.name} value={proj.name}>{proj.name} ({proj.location})</option>
                     ))}
                   </select>
                 </div>
