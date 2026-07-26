@@ -347,6 +347,61 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
           </div>
         )}
 
+        {/* AI Predicted SLV Property Match Card */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(16,185,129,0.08) 100%)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-md)', padding: '1.1rem', marginTop: '0.85rem', marginBottom: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <Sparkles size={18} style={{ color: 'var(--accent-primary)' }} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent-primary)' }}>
+                AI Predicted SLV Property Match
+              </span>
+            </div>
+            <span className="badge badge-high" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}>
+              {currentIntel.conversionProbability} AI Match
+            </span>
+          </div>
+
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+            {currentIntel.predictedProject || simLead.slvProject || 'SLV Lorven (Gachibowli)'}
+          </h3>
+
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.85rem', lineHeight: '1.4' }}>
+            Algorithm match predicted from client's 4 financial metrics, browsed projects & site visits:
+          </p>
+
+          {/* 4 Prediction Factors Breakdown */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', background: 'var(--bg-app)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.8rem' }}>
+            <div>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>1. Annual Income</span>
+              <div style={{ fontWeight: 700, marginTop: '2px', color: 'var(--text-primary)' }}>{formatINR(simLead.annualIncome)}</div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>2. Max Investment Budget</span>
+              <div style={{ fontWeight: 700, marginTop: '2px', color: 'var(--text-primary)' }}>{formatINR(simLead.budget)}</div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>3. Credit Score</span>
+              <div style={{ fontWeight: 700, marginTop: '2px', color: 'var(--priority-high)' }}>{simLead.creditScore || 750}</div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>4. Bank Pre-Approval</span>
+              <div style={{ fontWeight: 700, marginTop: '2px', color: simLead.loanPreapproved === 'Yes' ? 'var(--priority-high)' : 'var(--priority-medium)' }}>
+                {simLead.loanPreapproved === 'Yes' ? 'Pre-Approved ✓' : 'Pending Verification'}
+              </div>
+            </div>
+            <div style={{ gridColumn: 'span 2', background: 'rgba(99,102,241,0.06)', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(99,102,241,0.2)', marginTop: '2px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>🔥 Projects Browsed:</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{simLead.propertiesViewed || 0} views</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>📍 Site Visits Done:</span>
+                <span style={{ fontWeight: 700, color: 'var(--priority-high)' }}>{scheduledVisits.length || simLead.siteVisits || 0} visits</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* AI Score Overview Box */}
         <div style={{
           background: 'var(--bg-app)',

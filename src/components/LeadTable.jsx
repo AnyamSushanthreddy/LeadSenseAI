@@ -1,6 +1,6 @@
 import React from 'react';
-import { formatINR } from '../services/scoringEngine';
-import { ArrowUpRight, CheckCircle2, Clock, MapPin, Zap, Trash2, Phone, Mail } from 'lucide-react';
+import { formatINR, predictMatchedSLVProject } from '../services/scoringEngine';
+import { ArrowUpRight, CheckCircle2, Clock, MapPin, Zap, Trash2, Phone, Mail, Sparkles } from 'lucide-react';
 
 export default function LeadTable({ leads, onSelectLead, onDeleteLead }) {
   if (!leads || leads.length === 0) {
@@ -128,6 +128,11 @@ export default function LeadTable({ leads, onSelectLead, onDeleteLead }) {
                 <div style={{ fontWeight: 600 }}>{formatINR(lead.budget)}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
                   <MapPin size={12} /> {lead.preferredLocation} ({lead.propertyType})
+                </div>
+                <div style={{ marginTop: '3px' }}>
+                  <span className="badge badge-medium" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid rgba(99,102,241,0.3)', fontSize: '0.68rem', padding: '0.15rem 0.45rem' }}>
+                    ✨ {lead.predictedProject || predictMatchedSLVProject(lead)}
+                  </span>
                 </div>
               </td>
 

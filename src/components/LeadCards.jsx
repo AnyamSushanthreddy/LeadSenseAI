@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatINR } from '../services/scoringEngine';
+import { formatINR, predictMatchedSLVProject } from '../services/scoringEngine';
 import { MapPin, Zap, Clock, ShieldCheck, ArrowRight, Trash2, Phone, Mail } from 'lucide-react';
 
 export default function LeadCards({ leads, onSelectLead, onDeleteLead }) {
@@ -41,6 +41,11 @@ export default function LeadCards({ leads, onSelectLead, onDeleteLead }) {
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{lead.name}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {lead.occupation} • <span style={{ color: 'var(--accent-primary)' }}>{lead.id}</span>
+                </div>
+                <div style={{ marginTop: '2px' }}>
+                  <span className="badge badge-medium" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid rgba(99,102,241,0.3)', fontSize: '0.68rem', padding: '0.15rem 0.45rem' }}>
+                    ✨ {lead.predictedProject || predictMatchedSLVProject(lead)}
+                  </span>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
