@@ -52,7 +52,7 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
           avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
         });
       } else {
-        setError('Invalid Agent credentials. Try Demo Agent login below.');
+        setError('Invalid Agent credentials. Please sign in with agent@slvbuilders.com and password admin123.');
       }
     } else {
       // Flexible matching: check by Email, Phone Number, Name, or Lead ID!
