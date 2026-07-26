@@ -18,16 +18,28 @@ export default function App() {
   // Theme state
   const [theme, setTheme] = useState('dark');
 
-  // Leads state initialized with localStorage persistence & dataset computed intelligence
+  // Leads state initialized by merging master dataset with localStorage persistence
   const [leads, setLeads] = useState(() => {
+    const combinedMap = new Map();
+
+    // 1. Pre-seed with all master client records from dataset
+    initialLeadsData.forEach(l => {
+      if (l && l.id) {
+        combinedMap.set(l.id, l);
+      }
+    });
+
+    // 2. Merge custom/updated leads from localStorage on top of dataset
     try {
       const stored = localStorage.getItem('leadsense_custom_leads');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(l => {
-            const intel = calculateLeadIntelligence(l);
-            return { ...l, ...intel };
+        if (Array.isArray(parsed)) {
+          parsed.forEach(l => {
+            if (l && l.id) {
+              const existing = combinedMap.get(l.id) || {};
+              combinedMap.set(l.id, { ...existing, ...l });
+            }
           });
         }
       }
@@ -35,7 +47,8 @@ export default function App() {
       console.error('Failed to read stored leads from localStorage', e);
     }
 
-    return initialLeadsData.map(l => {
+    // 3. Compute live AI Lead Intelligence for all clients
+    return Array.from(combinedMap.values()).map(l => {
       const intel = calculateLeadIntelligence(l);
       return { ...l, ...intel };
     });
