@@ -3,7 +3,7 @@ import {
   Building2, ExternalLink, Calendar, ShieldCheck, CheckCircle2, Clock, MapPin,
   Sparkles, Phone, MessageSquare, Award, ArrowUpRight, Heart, DollarSign, Camera, Check, X, Trash2, Edit2, Eye, ChevronDown, ChevronUp, Star
 } from 'lucide-react';
-import { formatINR, calculateLeadIntelligence } from '../services/scoringEngine';
+import { formatINR, calculateLeadIntelligence, getPredictionBreakdown } from '../services/scoringEngine';
 
 const SLV_PROJECT_CATALOGUE = [
   {
@@ -136,13 +136,16 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
   // Property Viewing Tracker State
   // viewedProjects: { projectName -> { count, lastViewed } }
   const [viewedProjects, setViewedProjects] = useState(() => {
-    const storageKey = `leadsense_viewed_${customer.id}`;
+    if (safeCustomer.viewedProjects && typeof safeCustomer.viewedProjects === 'object') {
+      return safeCustomer.viewedProjects;
+    }
+    const storageKey = `leadsense_viewed_${safeCustomer.id}`;
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    if (customer.propertiesViewed === 0) return {};
-    return { [customer.slvProject]: { count: customer.propertiesViewed || 0, lastViewed: new Date().toISOString() } };
+    if (safeCustomer.propertiesViewed === 0) return {};
+    return { [safeCustomer.slvProject]: { count: safeCustomer.propertiesViewed || 0, lastViewed: new Date().toISOString() } };
   });
   const [expandedProject, setExpandedProject] = useState(null);
 
@@ -151,41 +154,12 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
 
   // Dynamic AI Prediction based on 4 Financial Metrics + Most Browsed Project + Most Site Visits
   const dynamicPrediction = useMemo(() => {
-    let topBrowsed = null;
-    let maxViews = 0;
-    Object.entries(viewedProjects).forEach(([pName, data]) => {
-      const cnt = data?.count || (typeof data === 'number' ? data : 1);
-      if (cnt > maxViews) {
-        maxViews = cnt;
-        topBrowsed = pName;
-      }
+    return getPredictionBreakdown({
+      ...safeCustomer,
+      viewedProjects,
+      scheduledVisits
     });
-
-    const visitCounts = {};
-    if (Array.isArray(scheduledVisits)) {
-      scheduledVisits.forEach(v => {
-        const p = v.project || v.slvProject;
-        if (p) visitCounts[p] = (visitCounts[p] || 0) + 1;
-      });
-    }
-
-    let topVisited = null;
-    let maxVisits = 0;
-    Object.entries(visitCounts).forEach(([pName, cnt]) => {
-      if (cnt > maxVisits) {
-        maxVisits = cnt;
-        topVisited = pName;
-      }
-    });
-
-    let predicted = topVisited || topBrowsed || intel.predictedProject || 'SLV Lorven (Gachibowli)';
-
-    return {
-      predictedProject: predicted,
-      topBrowsed: topBrowsed ? `${topBrowsed} (${maxViews} views)` : 'None browsed yet',
-      topVisited: topVisited ? `${topVisited} (${maxVisits} visits)` : 'No site visits yet'
-    };
-  }, [viewedProjects, scheduledVisits, intel.predictedProject]);
+  }, [safeCustomer, viewedProjects, scheduledVisits]);
 
   const handleViewProject = (projectName) => {
     const updated = {
@@ -199,13 +173,17 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
     setExpandedProject(expandedProject === projectName ? null : projectName);
 
     // Persist to localStorage
-    const storageKey = `leadsense_viewed_${customer.id}`;
+    const storageKey = `leadsense_viewed_${safeCustomer.id}`;
     try { localStorage.setItem(storageKey, JSON.stringify(updated)); } catch (e) {}
 
-    // Update parent so agent sees updated propertiesViewed count
+    // Sync to parent database so Admin Portal sees updated viewedProjects & views count immediately
     const newTotalViewCount = Object.values(updated).reduce((sum, p) => sum + p.count, 0);
     if (onUpdateCustomer) {
-      onUpdateCustomer({ ...customer, propertiesViewed: newTotalViewCount });
+      onUpdateCustomer({
+        ...safeCustomer,
+        viewedProjects: updated,
+        propertiesViewed: newTotalViewCount
+      });
     }
   };
 
@@ -220,21 +198,22 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
     setScheduledVisits(newVisits);
 
     // Save to localStorage
-    const storageKey = `leadsense_visits_${customer.id}`;
+    const storageKey = `leadsense_visits_${safeCustomer.id}`;
     try { localStorage.setItem(storageKey, JSON.stringify(newVisits)); } catch (e) {}
 
-    // Update parent state so agent sees updated visits & counts
+    // Sync to parent database so Admin Portal sees updated visits & counts immediately
     if (onUpdateCustomer) {
       onUpdateCustomer({
-        ...customer,
-        siteVisits: (customer.siteVisits || 0) + 1,
-        scheduledVisits: newVisits
+        ...safeCustomer,
+        siteVisits: newVisits.length,
+        scheduledVisits: newVisits,
+        viewedProjects
       });
     }
 
     setIsScheduling(false);
     setNewVisitDate('');
-    setNewVisitProject(customer.slvProject || 'SLV Lorven');
+    setNewVisitProject(safeCustomer.slvProject || 'SLV Lorven');
     setNewVisitTime('11:00 AM');
   };
 

@@ -20,40 +20,110 @@
 export function predictMatchedSLVProject(lead) {
   if (!lead) return 'SLV Lorven (Gachibowli)';
 
+  // 1. Calculate project with highest site visits done
+  const visitCounts = {};
+  if (Array.isArray(lead.scheduledVisits)) {
+    lead.scheduledVisits.forEach(v => {
+      const p = v.project || v.slvProject;
+      if (p) visitCounts[p] = (visitCounts[p] || 0) + 1;
+    });
+  }
+
+  let topVisited = null;
+  let maxVisits = 0;
+  Object.entries(visitCounts).forEach(([pName, cnt]) => {
+    if (cnt > maxVisits) {
+      maxVisits = cnt;
+      topVisited = pName;
+    }
+  });
+
+  // 2. Calculate project with highest view count
+  let topBrowsed = null;
+  let maxViews = 0;
+  if (lead.viewedProjects && typeof lead.viewedProjects === 'object') {
+    Object.entries(lead.viewedProjects).forEach(([pName, data]) => {
+      const cnt = data?.count || (typeof data === 'number' ? data : 1);
+      if (cnt > maxViews) {
+        maxViews = cnt;
+        topBrowsed = pName;
+      }
+    });
+  }
+
+  // 3. Calculate Financial Tier
   const budget = Number(lead.budget) || 0;
   const income = Number(lead.annualIncome) || 0;
   const credit = Number(lead.creditScore) || 650;
   const preapproved = (lead.loanPreapproved || '').toLowerCase() === 'yes';
-  const siteVisits = Number(lead.siteVisits) || 0;
-  const views = Number(lead.propertiesViewed) || 0;
 
-  let score = 0;
-  if (budget >= 30000000) score += 35;
-  else if (budget >= 20000000) score += 28;
-  else if (budget >= 15000000) score += 20;
-  else if (budget >= 11000000) score += 14;
-  else if (budget >= 8000000) score += 8;
-  else score += 3;
+  let finScore = 0;
+  if (budget >= 30000000) finScore += 35;
+  else if (budget >= 20000000) finScore += 28;
+  else if (budget >= 15000000) finScore += 20;
+  else if (budget >= 11000000) finScore += 14;
+  else if (budget >= 8000000) finScore += 8;
+  else finScore += 3;
 
-  if (income >= 5000000) score += 25;
-  else if (income >= 3500000) score += 18;
-  else if (income >= 2500000) score += 12;
-  else if (income >= 1500000) score += 8;
+  if (income >= 5000000) finScore += 25;
+  else if (income >= 3500000) finScore += 18;
+  else if (income >= 2500000) finScore += 12;
+  else if (income >= 1500000) finScore += 8;
 
-  if (credit >= 780) score += 15;
-  else if (credit >= 720) score += 10;
-  else if (credit >= 680) score += 5;
+  if (credit >= 780) finScore += 15;
+  else if (credit >= 720) finScore += 10;
+  else if (credit >= 680) finScore += 5;
+  if (preapproved) finScore += 12;
 
-  if (preapproved) score += 12;
-  if (siteVisits >= 2) score += 8;
-  if (views >= 10) score += 5;
+  let financialTier = 'SLV Lorven (Gachibowli)';
+  if (finScore >= 80) financialTier = 'SLV Signature Villas (Jubilee Hills)';
+  else if (finScore >= 62) financialTier = 'SLV Prime Heights (Financial District)';
+  else if (finScore >= 46) financialTier = 'SLV Paradise (HITECH City)';
+  else if (finScore >= 30) financialTier = 'SLV Lorven (Gachibowli)';
+  else if (finScore >= 18) financialTier = 'SLV Residency (Kondapur)';
+  else financialTier = 'SLV Green Meadows (Tellapur)';
 
-  if (score >= 80) return 'SLV Signature Villas (Jubilee Hills)';
-  if (score >= 62) return 'SLV Prime Heights (Financial District)';
-  if (score >= 46) return 'SLV Paradise (HITECH City)';
-  if (score >= 30) return 'SLV Lorven (Gachibowli)';
-  if (score >= 18) return 'SLV Residency (Kondapur)';
-  return 'SLV Green Meadows (Tellapur)';
+  // Priority: Top Visited > Top Browsed > Stored slvProject > Financial Tier
+  return topVisited || topBrowsed || lead.slvProject || financialTier;
+}
+
+export function getPredictionBreakdown(lead) {
+  const predictedProject = predictMatchedSLVProject(lead);
+
+  let topBrowsed = null;
+  let maxViews = 0;
+  if (lead?.viewedProjects && typeof lead.viewedProjects === 'object') {
+    Object.entries(lead.viewedProjects).forEach(([pName, data]) => {
+      const cnt = data?.count || (typeof data === 'number' ? data : 1);
+      if (cnt > maxViews) {
+        maxViews = cnt;
+        topBrowsed = pName;
+      }
+    });
+  }
+
+  const visitCounts = {};
+  if (Array.isArray(lead?.scheduledVisits)) {
+    lead.scheduledVisits.forEach(v => {
+      const p = v.project || v.slvProject;
+      if (p) visitCounts[p] = (visitCounts[p] || 0) + 1;
+    });
+  }
+
+  let topVisited = null;
+  let maxVisits = 0;
+  Object.entries(visitCounts).forEach(([pName, cnt]) => {
+    if (cnt > maxVisits) {
+      maxVisits = cnt;
+      topVisited = pName;
+    }
+  });
+
+  return {
+    predictedProject,
+    topBrowsed: topBrowsed ? `${topBrowsed} (${maxViews} views)` : 'None browsed yet',
+    topVisited: topVisited ? `${topVisited} (${maxVisits} visits)` : 'No site visits yet'
+  };
 }
 
 export function calculateLeadIntelligence(lead) {

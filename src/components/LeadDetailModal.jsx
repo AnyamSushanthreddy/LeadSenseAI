@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Phone, Mail, MessageSquare, Calendar, Zap, RefreshCw, CheckCircle2, AlertCircle, ArrowUpRight, TrendingUp, Camera, Check, Trash2 } from 'lucide-react';
-import { formatINR, calculateLeadIntelligence } from '../services/scoringEngine';
+import { formatINR, calculateLeadIntelligence, getPredictionBreakdown } from '../services/scoringEngine';
 
 export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteLead }) {
   if (!lead) return null;
@@ -125,6 +125,7 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
   const originalIntel = calculateLeadIntelligence(lead);
   const currentIntel = simIntelligence;
   const scoreDelta = currentIntel.leadScore - originalIntel.leadScore;
+  const predictionBreakdown = getPredictionBreakdown(simLead);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -391,12 +392,12 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
             </div>
             <div style={{ gridColumn: 'span 2', background: 'rgba(99,102,241,0.06)', padding: '0.55rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(99,102,241,0.2)', marginTop: '2px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>🔥 Projects Browsed:</span>
-                <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{simLead.propertiesViewed || 0} views</span>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>🔥 Most Browsed Project:</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{predictionBreakdown.topBrowsed}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>📍 Site Visits Done:</span>
-                <span style={{ fontWeight: 700, color: 'var(--priority-high)' }}>{scheduledVisits.length || simLead.siteVisits || 0} visits</span>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>📍 Most Site Visits Done:</span>
+                <span style={{ fontWeight: 700, color: 'var(--priority-high)' }}>{predictionBreakdown.topVisited}</span>
               </div>
             </div>
           </div>
