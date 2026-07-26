@@ -78,7 +78,7 @@ export default function Navbar({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid var(--border-subtle)', paddingLeft: '0.75rem' }}>
             <div style={{ fontSize: '0.78rem', textAlign: 'right' }}>
               <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                {currentUser.role === 'agent' ? currentUser.name : currentUser.customerData.name}
+                {currentUser.role === 'agent' ? (currentUser.name || 'SLV Director') : (currentUser.customerData?.name || currentUser.name || 'Client Account')}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)' }}>
                 {currentUser.role === 'agent' ? 'SLV Director' : 'Client Account'}

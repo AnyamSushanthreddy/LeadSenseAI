@@ -31,14 +31,16 @@ export default function App() {
       if (firebaseUser) {
         const uid = firebaseUser.uid;
         const initialLeads = getCloudUserLeads(uid);
+        const isAgent = firebaseUser.email?.toLowerCase() === 'agent@slvbuilders.com';
+
         const userSession = {
           uid,
-          role: 'customer',
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Authenticated Account',
+          role: isAgent ? 'agent' : 'customer',
+          name: firebaseUser.displayName || (isAgent ? 'SLV Lead Intelligence Director' : firebaseUser.email?.split('@')[0]) || 'Authenticated Account',
           email: firebaseUser.email || '',
-          avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          avatar: firebaseUser.photoURL || (isAgent ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'),
           provider: firebaseUser.providerData[0]?.providerId || 'firebase',
-          customerData: initialLeads[0] || null
+          customerData: isAgent ? null : (initialLeads[0] || null)
         };
         
         setLeads(initialLeads);

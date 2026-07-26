@@ -87,20 +87,31 @@ const SLV_PROJECT_CATALOGUE = [
 ];
 
 export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, onDeleteCustomer }) {
-  const intel = calculateLeadIntelligence(customer);
+  const safeCustomer = customer || {
+    id: 'LSA0001',
+    name: 'Valued Client',
+    email: 'client@slvbuilders.com',
+    phone: '+91 9876543210',
+    slvProject: 'SLV Lorven (Miyapur)',
+    propertiesViewed: 3,
+    siteVisits: 1,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  };
+
+  const intel = calculateLeadIntelligence(safeCustomer);
 
   // Persistent Scheduled VIP Site Visits State
   const [scheduledVisits, setScheduledVisits] = useState(() => {
-    const storageKey = `leadsense_visits_${customer.id}`;
+    const storageKey = `leadsense_visits_${safeCustomer.id}`;
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    if (customer.scheduledVisits && Array.isArray(customer.scheduledVisits) && customer.scheduledVisits.length > 0) {
-      return customer.scheduledVisits;
+    if (safeCustomer.scheduledVisits && Array.isArray(safeCustomer.scheduledVisits) && safeCustomer.scheduledVisits.length > 0) {
+      return safeCustomer.scheduledVisits;
     }
     return [
-      { date: '2026-07-28', time: '11:00 AM', project: customer.slvProject || 'SLV Lorven', status: 'Confirmed' }
+      { date: '2026-07-28', time: '11:00 AM', project: safeCustomer.slvProject || 'SLV Lorven', status: 'Confirmed' }
     ];
   });
 
