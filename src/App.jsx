@@ -1,93 +1,92 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import initialLeadsData from './data/leadsData.json';
-import { calculateLeadIntelligence } from './services/scoringEngine';
 import Navbar from './components/Navbar';
 import DashboardMetrics from './components/DashboardMetrics';
 import AnalyticsCharts from './components/AnalyticsCharts';
 import Toolbar from './components/Toolbar';
-import LeadTable from './components/LeadTable';
 import LeadCards from './components/LeadCards';
+import LeadTable from './components/LeadTable';
 import LeadDetailModal from './components/LeadDetailModal';
 import AddLeadModal from './components/AddLeadModal';
-import LoginPage from './components/LoginPage';
 import CustomerPortal from './components/CustomerPortal';
-import { ChevronLeft, ChevronRight, Building2, ExternalLink } from 'lucide-react';
+import LoginPage from './components/LoginPage';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { calculateLeadIntelligence } from './services/scoringEngine';
+import { getCloudUserLeads, saveCloudLead, deleteCloudLead, subscribeToCloudSync } from './services/cloudSyncEngine';
+import { auth, onAuthStateChanged, signOut as firebaseSignOut } from './services/firebase';
 import './styles/App.css';
 
 export default function App() {
   // Theme state
   const [theme, setTheme] = useState('dark');
 
-  // Leads state initialized by merging master dataset with localStorage persistence
-  const [leads, setLeads] = useState(() => {
-    const combinedMap = new Map();
+  // Auth User & Data Loading State
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [leads, setLeads] = useState([]);
 
-    // 1. Pre-seed with all master client records from dataset
-    initialLeadsData.forEach(l => {
-      if (l && l.id) {
-        combinedMap.set(l.id, l);
+  // Real-time Firebase Authentication listener & account data binding
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const uid = firebaseUser.uid;
+        const initialLeads = getCloudUserLeads(uid);
+        const userSession = {
+          uid,
+          role: 'customer',
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Authenticated Account',
+          email: firebaseUser.email || '',
+          avatar: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          provider: firebaseUser.providerData[0]?.providerId || 'firebase',
+          customerData: initialLeads[0] || null
+        };
+        
+        setLeads(initialLeads);
+        setCurrentUser(userSession);
       }
+      setAuthLoading(false);
     });
 
-    // 2. Merge custom/updated leads from localStorage on top of dataset
-    try {
-      const stored = localStorage.getItem('leadsense_custom_leads');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(l => {
-            if (l && l.id) {
-              const existing = combinedMap.get(l.id) || {};
-              combinedMap.set(l.id, { ...existing, ...l });
-            }
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Failed to read stored leads from localStorage', e);
-    }
+    return () => unsubscribeAuth();
+  }, []);
 
-    // 3. Compute live AI Lead Intelligence for all clients
-    return Array.from(combinedMap.values()).map(l => {
-      const intel = calculateLeadIntelligence(l);
-      return { ...l, ...intel };
+  // Subscribe to real-time database updates for active user session UID across all browsers & devices
+  useEffect(() => {
+    if (!currentUser || !currentUser.uid) return;
+
+    const userUid = currentUser.uid;
+    const initialLeads = getCloudUserLeads(userUid);
+    setLeads(initialLeads);
+
+    const unsubscribeSync = subscribeToCloudSync(userUid, (updatedLeads) => {
+      setLeads(updatedLeads);
     });
-  });
 
-  // Auth User State with localStorage persistence (remembers active login session across refreshes)
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('leadsense_current_user');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error('Failed to read current user session from localStorage', e);
-    }
-    return null;
-  });
+    return () => unsubscribeSync();
+  }, [currentUser?.uid]);
 
-  // Save leads to localStorage whenever leads state updates
-  useEffect(() => {
-    try {
-      localStorage.setItem('leadsense_custom_leads', JSON.stringify(leads));
-    } catch (e) {
-      console.error('Failed to save leads to localStorage', e);
+  // Login handler
+  const handleLoginSuccess = (userSession) => {
+    const userUid = userSession.uid || `uid_${Date.now()}`;
+    const userWithUid = { ...userSession, uid: userUid };
+    
+    // Fetch and bind cloud data for this UID
+    const cloudLeads = getCloudUserLeads(userUid);
+    setLeads(cloudLeads);
+    
+    if (userWithUid.role === 'customer' && !userWithUid.customerData && cloudLeads.length > 0) {
+      userWithUid.customerData = cloudLeads[0];
     }
-  }, [leads]);
+    
+    setCurrentUser(userWithUid);
+  };
 
-  // Save current user session to localStorage whenever auth state updates
-  useEffect(() => {
+  const handleLogout = () => {
     try {
-      if (currentUser) {
-        localStorage.setItem('leadsense_current_user', JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem('leadsense_current_user');
-      }
-    } catch (e) {
-      console.error('Failed to save user session to localStorage', e);
-    }
-  }, [currentUser]);
+      firebaseSignOut(auth);
+    } catch (e) {}
+    setCurrentUser(null);
+  };
 
   // Filter & Toolbar States
   const [searchTerm, setSearchTerm] = useState('');
@@ -126,11 +125,11 @@ export default function App() {
     return leads.filter(l => {
       // Search term (Name, ID, Occupation, Location)
       if (searchTerm.trim()) {
-        const query = searchTerm.toLowerCase();
-        const matchName = l.name.toLowerCase().includes(query);
-        const matchId = l.id.toLowerCase().includes(query);
-        const matchLoc = l.preferredLocation.toLowerCase().includes(query);
-        const matchOcc = l.occupation.toLowerCase().includes(query);
+        const queryStr = searchTerm.toLowerCase();
+        const matchName = l.name?.toLowerCase().includes(queryStr);
+        const matchId = l.id?.toLowerCase().includes(queryStr);
+        const matchLoc = l.preferredLocation?.toLowerCase().includes(queryStr);
+        const matchOcc = l.occupation?.toLowerCase().includes(queryStr);
         if (!matchName && !matchId && !matchLoc && !matchOcc) return false;
       }
 
@@ -148,11 +147,11 @@ export default function App() {
 
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'score_desc') return b.leadScore - a.leadScore;
-      if (sortBy === 'conversion_desc') return (b.conversionProbabilityVal || parseInt(b.conversionProbability)) - (a.conversionProbabilityVal || parseInt(a.conversionProbability));
-      if (sortBy === 'budget_desc') return b.budget - a.budget;
-      if (sortBy === 'income_desc') return b.annualIncome - a.annualIncome;
-      if (sortBy === 'recency_asc') return a.daysSinceLastActivity - b.daysSinceLastActivity;
+      if (sortBy === 'score_desc') return (b.leadScore || 0) - (a.leadScore || 0);
+      if (sortBy === 'conversion_desc') return (b.conversionProbabilityVal || parseInt(b.conversionProbability || 0)) - (a.conversionProbabilityVal || parseInt(a.conversionProbability || 0));
+      if (sortBy === 'budget_desc') return (b.budget || 0) - (a.budget || 0);
+      if (sortBy === 'income_desc') return (b.annualIncome || 0) - (a.annualIncome || 0);
+      if (sortBy === 'recency_asc') return (a.daysSinceLastActivity || 0) - (b.daysSinceLastActivity || 0);
       return 0;
     });
   }, [leads, searchTerm, priorityFilter, locationFilter, loanFilter, timelineFilter, sortBy]);
@@ -179,48 +178,27 @@ export default function App() {
     setSortBy('score_desc');
   };
 
-  // Add Lead Handler
+  // Centralized Real-time Add Lead Handler
   const handleAddLead = (newLead) => {
-    setLeads(prev => [newLead, ...prev]);
+    const userUid = currentUser?.uid || 'master_default_uid';
+    const updated = saveCloudLead(userUid, { ...newLead, userId: userUid });
+    if (updated) setLeads(updated);
     setSelectedLead(newLead);
   };
 
-  // Update Lead Handler (from Simulation or Edits)
+  // Centralized Real-time Update Lead Handler
   const handleUpdateLead = (updatedLead) => {
-    setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+    const userUid = currentUser?.uid || 'master_default_uid';
+    const updated = saveCloudLead(userUid, { ...updatedLead, userId: userUid });
+    if (updated) setLeads(updated);
     setSelectedLead(updatedLead);
   };
 
-  // Export CSV Handler
-  const handleExportCSV = () => {
-    const headers = [
-      'Lead ID', 'Full Name', 'Type', 'Occupation', 'Annual Income (INR)',
-      'Budget (INR)', 'Preferred Location', 'Matched SLV Project', 'Property Type',
-      'Lead Score', 'Priority', 'Conversion Prob', 'Intent Score', 'Affordability Score',
-      'Location Fit Score', 'Readiness Score', 'Move In Timeline', 'Loan Preapproved',
-      'Recommended Action'
-    ];
-
-    const rows = filteredLeads.map(l => [
-      l.id, `"${l.name}"`, l.type, `"${l.occupation}"`, l.annualIncome,
-      l.budget, `"${l.preferredLocation}"`, `"${l.slvProject || ''}"`, `"${l.propertyType}"`, l.leadScore,
-      l.priority, `"${l.conversionProbability}"`, l.intentScore, l.affordabilityScore,
-      l.locationFitScore, l.readinessScore, `"${l.moveInTimeline}"`, l.loanPreapproved,
-      `"${l.recommendedNextAction}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `SLV_Builders_LeadSense_Report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
+  // Centralized Real-time Delete Lead Handler
   const handleDeleteLead = (leadId) => {
-    setLeads(prev => prev.filter(l => l.id !== leadId));
+    const userUid = currentUser?.uid || 'master_default_uid';
+    const updated = deleteCloudLead(userUid, leadId);
+    if (updated) setLeads(updated);
     if (selectedLead && selectedLead.id === leadId) {
       setSelectedLead(null);
     }
@@ -229,19 +207,34 @@ export default function App() {
     }
   };
 
+  // Centralized Real-time Customer Profile Update Handler
   const handleUpdateCustomer = (updatedCustomer) => {
+    const userUid = currentUser?.uid || 'master_default_uid';
+    const updated = saveCloudLead(userUid, { ...updatedCustomer, userId: userUid });
     setCurrentUser(prev => ({
       ...prev,
       customerData: updatedCustomer
     }));
-    setLeads(prev => prev.map(l => l.id === updatedCustomer.id ? updatedCustomer : l));
+    if (updated) setLeads(updated);
   };
+
+  // Render Loading State while auth and cloud database sync initialization takes place
+  if (authLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
+        <div style={{ width: 44, height: 44, border: '3px solid var(--border-subtle)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ marginTop: '1.25rem', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          Authenticating & Syncing Real-Time Cloud Database...
+        </p>
+      </div>
+    );
+  }
 
   // If user is not logged in -> Show Login Page
   if (!currentUser) {
     return (
       <LoginPage
-        onLoginSuccess={(user) => setCurrentUser(user)}
+        onLoginSuccess={handleLoginSuccess}
         onRegisterUser={(newUser) => handleAddLead(newUser)}
         leads={leads}
       />
@@ -256,14 +249,16 @@ export default function App() {
           theme={theme}
           toggleTheme={toggleTheme}
           currentUser={currentUser}
-          onLogout={() => setCurrentUser(null)}
+          onLogout={handleLogout}
         />
-        <CustomerPortal
-          customer={currentUser.customerData}
-          onLogout={() => setCurrentUser(null)}
-          onUpdateCustomer={handleUpdateCustomer}
-          onDeleteCustomer={handleDeleteLead}
-        />
+        <main className="main-content">
+          <CustomerPortal
+            customer={currentUser.customerData || leads[0]}
+            onLogout={handleLogout}
+            onUpdateCustomer={handleUpdateCustomer}
+            onDeleteCustomer={handleDeleteLead}
+          />
+        </main>
       </div>
     );
   }
@@ -279,7 +274,7 @@ export default function App() {
         onOpenAddModal={() => setIsAddModalOpen(true)}
         onExportCSV={handleExportCSV}
         currentUser={currentUser}
-        onLogout={() => setCurrentUser(null)}
+        onLogout={handleLogout}
       />
 
       <main className="main-content">
