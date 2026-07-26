@@ -365,8 +365,11 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px', flexWrap: 'wrap' }}>
                   <span className="badge badge-high">{customer.type}</span>
+                  <span className="badge badge-medium" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    ✨ Your Matched SLV Project: {dynamicPrediction.predictedProject}
+                  </span>
                 </div>
               </div>
             </div>
@@ -490,7 +493,7 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
               {SLV_PROJECT_CATALOGUE.map((proj) => {
                 const isExpanded = expandedProject === proj.name;
                 const isViewed = !!viewedProjects[proj.name];
-                const isMatched = proj.name === customer.slvProject;
+                const isMatched = proj.name === dynamicPrediction.predictedProject || dynamicPrediction.predictedProject.includes(proj.name);
                 return (
                   <div
                     key={proj.name}
