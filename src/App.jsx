@@ -226,6 +226,38 @@ export default function App() {
     if (updated) setLeads(updated);
   };
 
+  // CSV Export Handler for Admin Dashboard
+  const handleExportCSV = () => {
+    const leadsToExport = filteredLeads && filteredLeads.length > 0 ? filteredLeads : leads;
+    if (!leadsToExport || leadsToExport.length === 0) return;
+
+    const headers = ['Lead ID', 'Name', 'Email', 'Phone', 'Target SLV Project', 'Priority', 'Lead Score', 'Conversion Prob', 'Budget (INR)', 'Location', 'Timeline', 'Stage'];
+    const rows = leadsToExport.map(l => [
+      l.id || '',
+      `"${(l.name || '').replace(/"/g, '""')}"`,
+      l.email || '',
+      l.phone || '',
+      `"${(l.slvProject || l.preferredLocation || '').replace(/"/g, '""')}"`,
+      l.priority || '',
+      l.leadScore || 0,
+      l.conversionProbability || '',
+      l.budget || 0,
+      `"${(l.preferredLocation || '').replace(/"/g, '""')}"`,
+      l.moveInTimeline || '',
+      l.transactionStage || ''
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `SLV_LeadSense_Export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Render Loading State while auth and cloud database sync initialization takes place
   if (authLoading) {
     return (
