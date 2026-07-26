@@ -26,9 +26,19 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
   const [newVisitDate, setNewVisitDate] = useState('');
   const [newVisitProject, setNewVisitProject] = useState(lead?.slvProject || 'SLV Lorven (Miyapur)');
   const [newVisitTime, setNewVisitTime] = useState('11:00 AM');
-  const [scheduledVisits, setScheduledVisits] = useState([
-    { date: '2026-07-28', time: '11:00 AM', project: lead?.slvProject || 'SLV Lorven', status: 'Confirmed' }
-  ]);
+  const [scheduledVisits, setScheduledVisits] = useState(() => {
+    const storageKey = `leadsense_visits_${lead.id}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    if (lead.scheduledVisits && Array.isArray(lead.scheduledVisits) && lead.scheduledVisits.length > 0) {
+      return lead.scheduledVisits;
+    }
+    return [
+      { date: '2026-07-28', time: '11:00 AM', project: lead?.slvProject || 'SLV Lorven', status: 'Confirmed' }
+    ];
+  });
   const [visitMsg, setVisitMsg] = useState('');
 
   useEffect(() => {
@@ -39,6 +49,15 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
     setIsEditingPhoto(false);
     setIsScheduling(false);
     setNewVisitProject(lead?.slvProject || 'SLV Lorven (Miyapur)');
+
+    const storageKey = `leadsense_visits_${lead.id}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) setScheduledVisits(JSON.parse(stored));
+      else if (lead.scheduledVisits && Array.isArray(lead.scheduledVisits)) {
+        setScheduledVisits(lead.scheduledVisits);
+      }
+    } catch (e) {}
   }, [lead]);
 
   const handleSimChange = (field, value) => {
@@ -77,16 +96,22 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
     e.preventDefault();
     if (!newVisitDate) return;
 
+    const newVisits = [
+      ...scheduledVisits,
+      { date: newVisitDate, time: newVisitTime, project: newVisitProject, status: 'Confirmed' }
+    ];
+    setScheduledVisits(newVisits);
+
+    // Persist to localStorage
+    const storageKey = `leadsense_visits_${lead.id}`;
+    try { localStorage.setItem(storageKey, JSON.stringify(newVisits)); } catch (e) {}
+
     const newVisitsCount = (simLead.siteVisits || 0) + 1;
-    const updatedLead = { ...simLead, siteVisits: newVisitsCount };
+    const updatedLead = { ...simLead, siteVisits: newVisitsCount, scheduledVisits: newVisits };
     const newIntel = calculateLeadIntelligence(updatedLead);
 
     setSimLead(updatedLead);
     setSimIntelligence(newIntel);
-    setScheduledVisits(prev => [
-      ...prev,
-      { date: newVisitDate, time: newVisitTime, project: newVisitProject, status: 'Confirmed' }
-    ]);
     setIsScheduling(false);
     setVisitMsg(`VIP Visit scheduled for ${newVisitProject} on ${newVisitDate} at ${newVisitTime}!`);
 

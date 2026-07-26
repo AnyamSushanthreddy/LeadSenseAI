@@ -89,9 +89,20 @@ const SLV_PROJECT_CATALOGUE = [
 export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, onDeleteCustomer }) {
   const intel = calculateLeadIntelligence(customer);
 
-  const [scheduledVisits, setScheduledVisits] = useState([
-    { date: '2026-07-28', time: '11:00 AM', project: customer.slvProject, status: 'Confirmed' }
-  ]);
+  // Persistent Scheduled VIP Site Visits State
+  const [scheduledVisits, setScheduledVisits] = useState(() => {
+    const storageKey = `leadsense_visits_${customer.id}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    if (customer.scheduledVisits && Array.isArray(customer.scheduledVisits) && customer.scheduledVisits.length > 0) {
+      return customer.scheduledVisits;
+    }
+    return [
+      { date: '2026-07-28', time: '11:00 AM', project: customer.slvProject || 'SLV Lorven', status: 'Confirmed' }
+    ];
+  });
 
   const [newVisitDate, setNewVisitDate] = useState('');
   const [newVisitProject, setNewVisitProject] = useState(customer.slvProject || 'SLV Lorven');
@@ -147,10 +158,26 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
   const handleBookVisit = (e) => {
     e.preventDefault();
     if (!newVisitDate) return;
-    setScheduledVisits(prev => [
-      ...prev,
+
+    const newVisits = [
+      ...scheduledVisits,
       { date: newVisitDate, time: newVisitTime, project: newVisitProject, status: 'Confirmed' }
-    ]);
+    ];
+    setScheduledVisits(newVisits);
+
+    // Save to localStorage
+    const storageKey = `leadsense_visits_${customer.id}`;
+    try { localStorage.setItem(storageKey, JSON.stringify(newVisits)); } catch (e) {}
+
+    // Update parent state so agent sees updated visits & counts
+    if (onUpdateCustomer) {
+      onUpdateCustomer({
+        ...customer,
+        siteVisits: (customer.siteVisits || 0) + 1,
+        scheduledVisits: newVisits
+      });
+    }
+
     setIsScheduling(false);
     setNewVisitDate('');
     setNewVisitProject(customer.slvProject || 'SLV Lorven');
