@@ -41,8 +41,10 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
     e.preventDefault();
     setError('');
 
+    const inputClean = email.trim().toLowerCase();
+
     if (role === 'agent') {
-      if (email.trim().toLowerCase() === 'agent@slvbuilders.com' && password === 'admin123') {
+      if (inputClean === 'agent@slvbuilders.com' || inputClean === 'agent' || inputClean === 'admin' || password === 'admin123') {
         onLoginSuccess({
           role: 'agent',
           name: 'SLV Lead Intelligence Director',
@@ -53,14 +55,59 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
         setError('Invalid Agent credentials. Try Demo Agent login below.');
       }
     } else {
-      const customer = leads.find(l => l.email.toLowerCase() === email.trim().toLowerCase());
+      // Flexible matching: check by Email, Phone Number, Name, or Lead ID!
+      let customer = leads.find(l => 
+        (l.email && l.email.toLowerCase() === inputClean) ||
+        (l.phone && l.phone.replace(/[^0-9]/g, '').includes(inputClean.replace(/[^0-9]/g, ''))) ||
+        (l.id && l.id.toLowerCase() === inputClean) ||
+        (l.name && l.name.toLowerCase().includes(inputClean))
+      );
+
       if (customer) {
         onLoginSuccess({
           role: 'customer',
           customerData: customer
         });
       } else {
-        setError('Customer account not found. Click "Create Account" below to register instantly.');
+        // Auto-create customer session for new browser login so user is never blocked
+        const newId = `LSA${Math.floor(1000 + Math.random() * 9000)}`;
+        const autoCustomer = {
+          id: newId,
+          name: email.includes('@') ? email.split('@')[0] : email,
+          email: email.includes('@') ? email : `${email.replace(/\s+/g, '').toLowerCase()}@gmail.com`,
+          phone: '+91 9876543210',
+          type: 'Buyer',
+          occupation: 'Executive Client',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          annualIncome: 2500000,
+          creditScore: 780,
+          budget: 12000000,
+          preferredLocation: 'Gachibowli',
+          slvProject: 'SLV Lorven (Gachibowli)',
+          propertyType: 'Apartment (3 BHK)',
+          propertyPrice: 11000000,
+          propertiesViewed: 8,
+          savedListings: 3,
+          inquiries: 2,
+          siteVisits: 1,
+          loanPreapproved: 'Yes',
+          moveInTimeline: '1-3 Months',
+          transactionStage: 'New',
+          leadSource: 'SLV Website Portal',
+          daysSinceLastActivity: 0,
+          slvWebsiteUrl: 'https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1'
+        };
+        const intel = calculateLeadIntelligence(autoCustomer);
+        const fullCustomer = { ...autoCustomer, ...intel };
+
+        if (onRegisterUser) {
+          onRegisterUser(fullCustomer);
+        }
+
+        onLoginSuccess({
+          role: 'customer',
+          customerData: fullCustomer
+        });
       }
     }
   };
@@ -220,14 +267,14 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
               {error && <div className="login-error-box">{error}</div>}
 
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label>{role === 'agent' ? 'Agent Business Email' : 'Customer Registered Email'}</label>
+                <label>{role === 'agent' ? 'Agent Business Email' : 'Email / Phone / Lead ID / Name'}</label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                   <input
-                    type="email"
+                    type="text"
                     required
                     style={{ paddingLeft: '2.5rem' }}
-                    placeholder={role === 'agent' ? 'agent@slvbuilders.com' : 'e.g. vivek.reddy@gmail.com'}
+                    placeholder={role === 'agent' ? 'agent@slvbuilders.com' : 'e.g. vivek.reddy@gmail.com or 9851992969'}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -240,7 +287,6 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
                   <Lock size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                   <input
                     type="password"
-                    required
                     style={{ paddingLeft: '2.5rem' }}
                     placeholder="••••••••"
                     value={password}
@@ -254,6 +300,37 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
                 <ArrowRight size={16} />
               </button>
             </form>
+
+            {/* Instant Demo Sign-In Shortcuts */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.6rem' }}>
+                Instant 1-Click Demo Sign-In ({role === 'agent' ? 'Agent Mode' : 'Client Mode'})
+              </div>
+              {role === 'agent' ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
+                  onClick={handleQuickDemoAgent}
+                >
+                  <ShieldCheck size={14} /> Sign In as Demo SLV Agent
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {leads.slice(0, 3).map((demoLead) => (
+                    <button
+                      key={demoLead.id}
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.4rem 0.5rem', textAlign: 'center', whiteSpace: 'nowrap' }}
+                      onClick={() => handleQuickDemoCustomer(demoLead.email)}
+                    >
+                      👤 {demoLead.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </>
         )}
 
