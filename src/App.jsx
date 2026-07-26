@@ -22,9 +22,32 @@ export default function App() {
   const [theme, setTheme] = useState('dark');
 
   // Auth User & Data Loading State
-  const [currentUser, setCurrentUser] = useState(null);
+  // Restore persistent active session from storage on app load
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedSession = localStorage.getItem('leadsense_active_session');
+      if (savedSession) {
+        return JSON.parse(savedSession);
+      }
+    } catch (e) {}
+    return null;
+  });
+
   const [authLoading, setAuthLoading] = useState(true);
   const [leads, setLeads] = useState([]);
+
+  // Sync session storage whenever currentUser updates
+  useEffect(() => {
+    if (currentUser) {
+      try {
+        localStorage.setItem('leadsense_active_session', JSON.stringify(currentUser));
+      } catch (e) {}
+    } else {
+      try {
+        localStorage.removeItem('leadsense_active_session');
+      } catch (e) {}
+    }
+  }, [currentUser]);
 
   // Real-time Firebase Authentication listener & account data binding
   useEffect(() => {
@@ -82,11 +105,17 @@ export default function App() {
     }
     
     setCurrentUser(userWithUid);
+    try {
+      localStorage.setItem('leadsense_active_session', JSON.stringify(userWithUid));
+    } catch (e) {}
   };
 
   const handleLogout = () => {
     try {
       firebaseSignOut(auth);
+    } catch (e) {}
+    try {
+      localStorage.removeItem('leadsense_active_session');
     } catch (e) {}
     setCurrentUser(null);
   };
