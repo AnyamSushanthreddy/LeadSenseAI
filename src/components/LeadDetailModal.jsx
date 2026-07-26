@@ -12,12 +12,33 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
   const [photoInput, setPhotoInput] = useState(lead.avatar || '');
 
+  // Schedule Visit States
+  const SLV_PROJECT_OPTIONS = [
+    'SLV Lorven (Miyapur)',
+    'SLV Paradise (Jubilee Hills)',
+    'SLV Residency (Kukatpally)',
+    'SLV Green Meadows (Gachibowli)',
+    'SLV Prime Heights (Kondapur)',
+    'SLV Signature Villas (Shamirpet)'
+  ];
+
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [newVisitDate, setNewVisitDate] = useState('');
+  const [newVisitProject, setNewVisitProject] = useState(lead?.slvProject || 'SLV Lorven (Miyapur)');
+  const [newVisitTime, setNewVisitTime] = useState('11:00 AM');
+  const [scheduledVisits, setScheduledVisits] = useState([
+    { date: '2026-07-28', time: '11:00 AM', project: lead?.slvProject || 'SLV Lorven', status: 'Confirmed' }
+  ]);
+  const [visitMsg, setVisitMsg] = useState('');
+
   useEffect(() => {
     setSimLead({ ...lead });
     setSimIntelligence(calculateLeadIntelligence(lead));
     setSimActive(false);
     setPhotoInput(lead.avatar || '');
     setIsEditingPhoto(false);
+    setIsScheduling(false);
+    setNewVisitProject(lead?.slvProject || 'SLV Lorven (Miyapur)');
   }, [lead]);
 
   const handleSimChange = (field, value) => {
