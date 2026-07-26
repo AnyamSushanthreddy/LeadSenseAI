@@ -31,10 +31,11 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
     slvProject: 'SLV Lorven (Gachibowli)',
     propertyType: 'Apartment (3 BHK)',
     propertyPrice: 13500000,
-    propertiesViewed: 10,
-    savedListings: 4,
-    inquiries: 2,
-    siteVisits: 1,
+    propertiesViewed: 0,
+    savedListings: 0,
+    inquiries: 0,
+    siteVisits: 0,
+    scheduledVisits: [],
     loanPreapproved: 'Yes',
     moveInTimeline: '1-3 Months',
     transactionStage: 'New',
@@ -194,6 +195,11 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
           email: cleanEmail,
           avatar,
           phone,
+          propertiesViewed: 0,
+          savedListings: 0,
+          inquiries: 0,
+          siteVisits: 0,
+          scheduledVisits: [],
           slvWebsiteUrl: 'https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1'
         };
 

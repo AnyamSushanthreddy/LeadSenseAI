@@ -107,12 +107,10 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
       const stored = localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    if (safeCustomer.scheduledVisits && Array.isArray(safeCustomer.scheduledVisits) && safeCustomer.scheduledVisits.length > 0) {
+    if (safeCustomer.scheduledVisits && Array.isArray(safeCustomer.scheduledVisits)) {
       return safeCustomer.scheduledVisits;
     }
-    return [
-      { date: '2026-07-28', time: '11:00 AM', project: safeCustomer.slvProject || 'SLV Lorven', status: 'Confirmed' }
-    ];
+    return [];
   });
 
   const [newVisitDate, setNewVisitDate] = useState('');
@@ -136,13 +134,13 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
       const stored = localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored);
     } catch (e) {}
-    // Pre-seed matched project as already viewed once
-    return { [customer.slvProject]: { count: customer.propertiesViewed || 3, lastViewed: new Date().toISOString() } };
+    if (customer.propertiesViewed === 0) return {};
+    return { [customer.slvProject]: { count: customer.propertiesViewed || 0, lastViewed: new Date().toISOString() } };
   });
   const [expandedProject, setExpandedProject] = useState(null);
 
   const totalViewed = Object.keys(viewedProjects).length;
-  const totalViewCount = Object.values(viewedProjects).reduce((sum, p) => sum + (p.count || 1), 0);
+  const totalViewCount = Object.values(viewedProjects).reduce((sum, p) => sum + (p.count || 0), 0);
 
   // Dynamic AI Prediction based on 4 Financial Metrics + Most Browsed Project + Most Site Visits
   const dynamicPrediction = useMemo(() => {
@@ -611,7 +609,7 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
               </div>
               <div style={{ background: 'var(--bg-app)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '0.85rem', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--priority-medium)', fontFamily: 'var(--font-display)' }}>
-                  {customer.siteVisits || 0}
+                  {scheduledVisits.length}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px', textTransform: 'uppercase' }}>Site Visits Done</div>
               </div>
