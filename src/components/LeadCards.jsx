@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatINR } from '../services/scoringEngine';
-import { MapPin, Zap, Clock, ShieldCheck, ArrowRight, Trash2, Phone } from 'lucide-react';
+import { MapPin, Zap, Clock, ShieldCheck, ArrowRight, Trash2, Phone, Mail } from 'lucide-react';
 
 export default function LeadCards({ leads, onSelectLead, onDeleteLead }) {
   if (!leads || leads.length === 0) {
@@ -42,8 +42,22 @@ export default function LeadCards({ leads, onSelectLead, onDeleteLead }) {
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {lead.occupation} • <span style={{ color: 'var(--accent-primary)' }}>{lead.id}</span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <Phone size={10} /> {lead.phone || 'No phone'}
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <Phone size={10} /> {lead.phone || 'No phone'}
+                  </span>
+                  {lead.email && (
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(lead.email)}&su=${encodeURIComponent('SLV Builders & Developers — Real Estate Consultation')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: '#4285F4', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}
+                      title="Open Gmail Composer"
+                    >
+                      <Mail size={10} /> {lead.email} ↗
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

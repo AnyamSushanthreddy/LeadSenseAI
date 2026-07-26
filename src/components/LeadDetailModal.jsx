@@ -164,8 +164,21 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
                 </h2>
                 <span className="logo-ai-tag">{simLead.type}</span>
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {simLead.occupation} • Phone: <strong style={{ color: 'var(--text-primary)' }}>{simLead.phone || 'N/A'}</strong> • ID: <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{simLead.id}</span>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span>{simLead.occupation}</span>
+                <span>• Phone: <strong style={{ color: 'var(--text-primary)' }}>{simLead.phone || 'N/A'}</strong></span>
+                <span>• ID: <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{simLead.id}</span></span>
+                {simLead.email && (
+                  <span>• <a
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(simLead.email)}&su=${encodeURIComponent('SLV Builders & Developers — Real Estate Consultation')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#4285F4', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                    title="Compose Email on Gmail"
+                  >
+                    <Mail size={12} /> {simLead.email} ↗
+                  </a></span>
+                )}
               </p>
             </div>
           </div>
@@ -205,8 +218,15 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
           <a href={`tel:${simLead.phone}`} className="btn btn-primary" style={{ flex: 1, textDecoration: 'none' }}>
             <Phone size={14} /> Call Lead
           </a>
-          <a href={`mailto:${simLead.email}`} className="btn btn-secondary" style={{ flex: 1, textDecoration: 'none' }}>
-            <Mail size={14} /> Email
+          <a
+            href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(simLead.email)}&su=${encodeURIComponent('SLV Builders & Developers — Real Estate Consultation')}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-secondary"
+            style={{ flex: 1, textDecoration: 'none' }}
+            title="Compose email on Gmail"
+          >
+            <Mail size={14} /> Gmail Lead
           </a>
           <a href={`https://wa.me/${simLead.phone?.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ flex: 1, textDecoration: 'none' }}>
             <MessageSquare size={14} /> WhatsApp
