@@ -6,13 +6,14 @@ import {
 } from 'recharts';
 import { PieChart as PieIcon, BarChart3, MapPin, Zap } from 'lucide-react';
 
-export default function AnalyticsCharts({ leads }) {
-  if (!leads || leads.length === 0) return null;
+export default function AnalyticsCharts({ leads = [] }) {
+  const safeLeads = Array.isArray(leads) ? leads : [];
+  if (safeLeads.length === 0) return null;
 
   // 1. Priority Data
-  const highCount = leads.filter(l => l.priority === 'High').length;
-  const medCount = leads.filter(l => l.priority === 'Medium').length;
-  const lowCount = leads.filter(l => l.priority === 'Low').length;
+  const highCount = safeLeads.filter(l => l && l.priority === 'High').length;
+  const medCount = safeLeads.filter(l => l && l.priority === 'Medium').length;
+  const lowCount = safeLeads.filter(l => l && l.priority === 'Low').length;
 
   const priorityData = [
     { name: 'High Priority', value: highCount, color: '#10B981' },
@@ -21,10 +22,10 @@ export default function AnalyticsCharts({ leads }) {
   ];
 
   // 2. 4-Dimension Radar / Average Data
-  const avgIntent = Math.round(leads.reduce((a, l) => a + l.intentScore, 0) / leads.length);
-  const avgAffordability = Math.round(leads.reduce((a, l) => a + l.affordabilityScore, 0) / leads.length);
-  const avgLocation = Math.round(leads.reduce((a, l) => a + l.locationFitScore, 0) / leads.length);
-  const avgReadiness = Math.round(leads.reduce((a, l) => a + l.readinessScore, 0) / leads.length);
+  const avgIntent = Math.round(safeLeads.reduce((a, l) => a + (l?.intentScore || 0), 0) / safeLeads.length) || 0;
+  const avgAffordability = Math.round(safeLeads.reduce((a, l) => a + (l?.affordabilityScore || 0), 0) / safeLeads.length) || 0;
+  const avgLocation = Math.round(safeLeads.reduce((a, l) => a + (l?.locationFitScore || 0), 0) / safeLeads.length) || 0;
+  const avgReadiness = Math.round(safeLeads.reduce((a, l) => a + (l?.readinessScore || 0), 0) / safeLeads.length) || 0;
 
   const dimensionData = [
     { subject: 'Intent', score: avgIntent, fullMark: 100 },

@@ -2,12 +2,13 @@ import React from 'react';
 import { Users, Zap, Award, TrendingUp, DollarSign } from 'lucide-react';
 import { formatINR } from '../services/scoringEngine';
 
-export default function DashboardMetrics({ leads }) {
-  const totalLeads = leads.length;
-  const highPriorityLeads = leads.filter(l => l.priority === 'High').length;
-  const avgScore = totalLeads ? Math.round(leads.reduce((acc, l) => acc + l.leadScore, 0) / totalLeads) : 0;
-  const avgConversion = totalLeads ? Math.round(leads.reduce((acc, l) => acc + (l.conversionProbabilityVal || parseInt(l.conversionProbability)), 0) / totalLeads) : 0;
-  const totalPipeline = leads.reduce((acc, l) => acc + (l.budget || 0), 0);
+export default function DashboardMetrics({ leads = [] }) {
+  const safeLeads = Array.isArray(leads) ? leads : [];
+  const totalLeads = safeLeads.length;
+  const highPriorityLeads = safeLeads.filter(l => l && l.priority === 'High').length;
+  const avgScore = totalLeads ? Math.round(safeLeads.reduce((acc, l) => acc + (l.leadScore || 0), 0) / totalLeads) : 0;
+  const avgConversion = totalLeads ? Math.round(safeLeads.reduce((acc, l) => acc + (l.conversionProbabilityVal || parseInt(l.conversionProbability || 0) || 0), 0) / totalLeads) : 0;
+  const totalPipeline = safeLeads.reduce((acc, l) => acc + (l.budget || 0), 0);
 
   return (
     <div className="metrics-grid">
