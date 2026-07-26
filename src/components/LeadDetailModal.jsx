@@ -52,6 +52,30 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
     }
   };
 
+  const handleConfirmVisit = (e) => {
+    e.preventDefault();
+    if (!newVisitDate) return;
+
+    const newVisitsCount = (simLead.siteVisits || 0) + 1;
+    const updatedLead = { ...simLead, siteVisits: newVisitsCount };
+    const newIntel = calculateLeadIntelligence(updatedLead);
+
+    setSimLead(updatedLead);
+    setSimIntelligence(newIntel);
+    setScheduledVisits(prev => [
+      ...prev,
+      { date: newVisitDate, time: newVisitTime, project: newVisitProject, status: 'Confirmed' }
+    ]);
+    setIsScheduling(false);
+    setVisitMsg(`VIP Visit scheduled for ${newVisitProject} on ${newVisitDate} at ${newVisitTime}!`);
+
+    if (onUpdateLead) {
+      onUpdateLead({ ...updatedLead, ...newIntel });
+    }
+
+    setTimeout(() => setVisitMsg(''), 6000);
+  };
+
   const originalIntel = calculateLeadIntelligence(lead);
   const currentIntel = simIntelligence;
   const scoreDelta = currentIntel.leadScore - originalIntel.leadScore;
@@ -100,39 +124,28 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              className="icon-btn"
-              style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-              onClick={handleDeleteClient}
-              title="Delete Client Account"
-            >
-              <Trash2 size={18} />
-            </button>
-
-            <button className="icon-btn" onClick={onClose}>
-              <X size={20} />
-            </button>
-          </div>
+          <button className="icon-btn" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
 
         {/* Profile Photo Edit Bar */}
         {isEditingPhoto && (
-          <form onSubmit={handleSavePhoto} style={{ background: 'var(--bg-app)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-strong)' }}>
+          <form onSubmit={handleSavePhoto} style={{ background: 'var(--bg-app)', padding: '0.85rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', border: '1px solid var(--border-strong)' }}>
             <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-              Set Profile Photo Image URL
+              Insert Profile Photo URL
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="url"
                 required
-                placeholder="https://images.unsplash.com/... or image link"
+                placeholder="https://images.unsplash.com/..."
                 value={photoInput}
                 onChange={(e) => setPhotoInput(e.target.value)}
                 style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.4rem 0.6rem', fontSize: '0.82rem', color: 'var(--text-primary)' }}
               />
               <button type="submit" className="btn btn-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}>
-                <Check size={14} /> Update Photo
+                <Check size={14} /> Save Photo
               </button>
               <button type="button" className="icon-btn" style={{ width: 32, height: 32 }} onClick={() => setIsEditingPhoto(false)}>
                 <X size={14} />
@@ -149,11 +162,15 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
           <a href={`mailto:${simLead.email}`} className="btn btn-secondary" style={{ flex: 1, textDecoration: 'none' }}>
             <Mail size={14} /> Email
           </a>
-          <a href={`https://wa.me/${simLead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ flex: 1, textDecoration: 'none' }}>
+          <a href={`https://wa.me/${simLead.phone?.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ flex: 1, textDecoration: 'none' }}>
             <MessageSquare size={14} /> WhatsApp
           </a>
-          <button className="btn btn-secondary" style={{ flex: 1 }}>
-            <Calendar size={14} /> Schedule Visit
+          <button
+            className="btn btn-secondary"
+            style={{ flex: 1, borderColor: isScheduling ? 'var(--accent-primary)' : undefined, color: isScheduling ? 'var(--accent-primary)' : undefined }}
+            onClick={() => setIsScheduling(!isScheduling)}
+          >
+            <Calendar size={14} /> {isScheduling ? 'Close Form' : 'Schedule Visit'}
           </button>
           <button
             className="btn btn-secondary"
@@ -163,6 +180,106 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
             <Trash2 size={14} /> Delete
           </button>
         </div>
+
+        {/* Visit Confirmation Alert Banner */}
+        {visitMsg && (
+          <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', color: 'var(--priority-high)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <CheckCircle2 size={16} />
+            <span>{visitMsg}</span>
+          </div>
+        )}
+
+        {/* Interactive Schedule Visit Form */}
+        {isScheduling && (
+          <form onSubmit={handleConfirmVisit} style={{ background: 'var(--bg-app)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-md)', padding: '1rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Calendar size={16} /> Schedule VIP Site Visit for {simLead.name}
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Select SLV Project
+              </label>
+              <select
+                required
+                value={newVisitProject}
+                onChange={(e) => setNewVisitProject(e.target.value)}
+                className="custom-select"
+                style={{ width: '100%', padding: '0.45rem 2rem 0.45rem 0.65rem', fontSize: '0.85rem' }}
+              >
+                {SLV_PROJECT_OPTIONS.map(proj => (
+                  <option key={proj} value={proj}>{proj}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Preferred Visit Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={newVisitDate}
+                  onChange={(e) => setNewVisitDate(e.target.value)}
+                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.4rem 0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Preferred Time Slot
+                </label>
+                <select
+                  value={newVisitTime}
+                  onChange={(e) => setNewVisitTime(e.target.value)}
+                  className="custom-select"
+                  style={{ width: '100%', padding: '0.45rem 2rem 0.45rem 0.65rem', fontSize: '0.85rem' }}
+                >
+                  <option>10:00 AM</option>
+                  <option>11:00 AM</option>
+                  <option>12:00 PM</option>
+                  <option>02:00 PM</option>
+                  <option>03:00 PM</option>
+                  <option>04:00 PM</option>
+                  <option>05:00 PM</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => setIsScheduling(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" style={{ fontSize: '0.8rem' }}>
+                <Calendar size={14} /> Confirm Visit
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Scheduled Site Visits List */}
+        {scheduledVisits.length > 0 && (
+          <div style={{ marginTop: '0.75rem', background: 'var(--bg-app)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '0.85rem' }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Calendar size={13} style={{ color: 'var(--accent-primary)' }} />
+              Scheduled Site Visits ({scheduledVisits.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {scheduledVisits.map((visit, idx) => (
+                <div key={idx} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.6rem 0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{visit.project}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {visit.date} at {visit.time}
+                    </div>
+                  </div>
+                  <span className="badge badge-high" style={{ fontSize: '0.68rem' }}>{visit.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* AI Score Overview Box */}
         <div style={{
