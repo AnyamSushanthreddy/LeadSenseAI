@@ -96,12 +96,11 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
           return;
         }
 
-        // Search master leads array by Email, Phone, Lead ID, or Name
+        // Search master leads array by exact Email, Phone, or Lead ID
         let customer = leads.find(l => 
           (l.email && l.email.toLowerCase() === inputClean) ||
-          (l.phone && l.phone.replace(/[^0-9]/g, '').includes(inputClean.replace(/[^0-9]/g, ''))) ||
-          (l.id && l.id.toLowerCase() === inputClean) ||
-          (l.name && l.name.toLowerCase() === inputClean)
+          (l.phone && l.phone.replace(/[^0-9]/g, '') === inputClean.replace(/[^0-9]/g, '') && inputClean.length >= 10) ||
+          (l.id && l.id.toLowerCase() === inputClean)
         );
 
         const accountUid = getAccountUidFromEmail(customer?.email || inputClean);

@@ -330,7 +330,7 @@ export default function App() {
           />
           <main className="main-content">
             <CustomerPortal
-              customer={currentUser.customerData || (leads && leads.find(l => l.email?.toLowerCase() === currentUser.email?.toLowerCase() || l.userId === currentUser.uid)) || leads[0]}
+              customer={currentUser.customerData || (leads && leads.find(l => l.email?.toLowerCase() === currentUser.email?.toLowerCase() || l.userId === currentUser.uid))}
               onLogout={handleLogout}
               onUpdateCustomer={handleUpdateCustomer}
               onDeleteCustomer={handleDeleteLead}

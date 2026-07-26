@@ -88,13 +88,20 @@ const SLV_PROJECT_CATALOGUE = [
 
 export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, onDeleteCustomer }) {
   const safeCustomer = customer || {
-    id: 'LSA0001',
-    name: 'Valued Client',
-    email: 'client@slvbuilders.com',
-    phone: '+91 9876543210',
-    slvProject: 'SLV Lorven (Miyapur)',
-    propertiesViewed: 3,
-    siteVisits: 1,
+    id: `LSA${Math.floor(1000 + Math.random() * 9000)}`,
+    name: 'Authenticated Account',
+    email: '',
+    phone: '',
+    type: 'Buyer',
+    occupation: 'Real Estate Investor',
+    annualIncome: 2500000,
+    budget: 12000000,
+    creditScore: 750,
+    loanPreapproved: 'Yes',
+    slvProject: 'SLV Lorven (Gachibowli)',
+    propertiesViewed: 0,
+    siteVisits: 0,
+    scheduledVisits: [],
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   };
 
