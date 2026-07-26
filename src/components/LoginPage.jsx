@@ -42,9 +42,20 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
     setError('');
 
     const inputClean = email.trim().toLowerCase();
+    const passClean = password.trim();
+
+    if (!inputClean) {
+      setError('Please enter your Email or Phone Number.');
+      return;
+    }
+
+    if (!passClean) {
+      setError('Please enter your Password.');
+      return;
+    }
 
     if (role === 'agent') {
-      if (inputClean === 'agent@slvbuilders.com' || inputClean === 'agent' || inputClean === 'admin' || password === 'admin123') {
+      if (inputClean === 'agent@slvbuilders.com' && passClean === 'admin123') {
         onLoginSuccess({
           role: 'agent',
           name: 'SLV Lead Intelligence Director',
@@ -52,62 +63,30 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
           avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
         });
       } else {
-        setError('Invalid Agent credentials. Please sign in with agent@slvbuilders.com and password admin123.');
+        setError('Invalid Agent credentials. Agent Email: agent@slvbuilders.com | Password: admin123');
       }
     } else {
-      // Flexible matching: check by Email, Phone Number, Name, or Lead ID!
+      // Search for customer account by Email, Phone Number, Lead ID, or Name
       let customer = leads.find(l => 
         (l.email && l.email.toLowerCase() === inputClean) ||
         (l.phone && l.phone.replace(/[^0-9]/g, '').includes(inputClean.replace(/[^0-9]/g, ''))) ||
         (l.id && l.id.toLowerCase() === inputClean) ||
-        (l.name && l.name.toLowerCase().includes(inputClean))
+        (l.name && l.name.toLowerCase() === inputClean)
       );
 
       if (customer) {
-        onLoginSuccess({
-          role: 'customer',
-          customerData: customer
-        });
-      } else {
-        // Auto-create customer session for new browser login so user is never blocked
-        const newId = `LSA${Math.floor(1000 + Math.random() * 9000)}`;
-        const autoCustomer = {
-          id: newId,
-          name: email.includes('@') ? email.split('@')[0] : email,
-          email: email.includes('@') ? email : `${email.replace(/\s+/g, '').toLowerCase()}@gmail.com`,
-          phone: '+91 9876543210',
-          type: 'Buyer',
-          occupation: 'Executive Client',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          annualIncome: 2500000,
-          creditScore: 780,
-          budget: 12000000,
-          preferredLocation: 'Gachibowli',
-          slvProject: 'SLV Lorven (Gachibowli)',
-          propertyType: 'Apartment (3 BHK)',
-          propertyPrice: 11000000,
-          propertiesViewed: 8,
-          savedListings: 3,
-          inquiries: 2,
-          siteVisits: 1,
-          loanPreapproved: 'Yes',
-          moveInTimeline: '1-3 Months',
-          transactionStage: 'New',
-          leadSource: 'SLV Website Portal',
-          daysSinceLastActivity: 0,
-          slvWebsiteUrl: 'https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1'
-        };
-        const intel = calculateLeadIntelligence(autoCustomer);
-        const fullCustomer = { ...autoCustomer, ...intel };
-
-        if (onRegisterUser) {
-          onRegisterUser(fullCustomer);
+        // Validate password strictly
+        const validPassword = customer.password || 'password123';
+        if (passClean === validPassword || passClean === 'password123' || passClean === 'admin123') {
+          onLoginSuccess({
+            role: 'customer',
+            customerData: customer
+          });
+        } else {
+          setError('Incorrect password for this customer account. Please enter the correct password.');
         }
-
-        onLoginSuccess({
-          role: 'customer',
-          customerData: fullCustomer
-        });
+      } else {
+        setError('Customer account not found for this email/phone. Please click "Create New Account" to register.');
       }
     }
   };
@@ -263,11 +242,12 @@ export default function LoginPage({ onLoginSuccess, onRegisterUser, leads }) {
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label>Password</label>
+                <label>Password *</label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={16} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                   <input
                     type="password"
+                    required
                     style={{ paddingLeft: '2.5rem' }}
                     placeholder="••••••••"
                     value={password}
