@@ -367,9 +367,6 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px', flexWrap: 'wrap' }}>
                   <span className="badge badge-high">{customer.type}</span>
-                  <span className="badge badge-medium" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                    ✨ Your Matched SLV Project: {dynamicPrediction.predictedProject}
-                  </span>
                 </div>
               </div>
             </div>
@@ -588,61 +585,8 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
           </div>
         </div>
 
-        {/* Right Column: Matched Project, Viewing History, Schedule & Advisor */}
+        {/* Right Column: Viewing History, Schedule & Advisor */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* SLV Project Match Card */}
-          <div className="metric-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Building2 size={18} style={{ color: 'var(--accent-primary)' }} />
-                <span>Your Matched SLV Project</span>
-              </div>
-
-              <a
-                href={customer.slvWebsiteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-secondary"
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-              >
-                Official Site <ExternalLink size={12} />
-              </a>
-            </div>
-
-            <div style={{ background: 'var(--bg-app)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1.1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {customer.slvProject}
-                  </h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                    <a
-                      href={SLV_PROJECT_CATALOGUE.find(p => p.name === customer.slvProject)?.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((customer.slvProject || 'SLV') + ' ' + customer.preferredLocation)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: '#4285F4', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}
-                      title="Open location on Google Maps"
-                    >
-                      <MapPin size={12} style={{ color: '#EA4335' }} /> {customer.preferredLocation} ↗
-                    </a>
-                    • {customer.propertyType}
-                  </p>
-                </div>
-                <span className="badge badge-high">98% Fit</span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem', fontSize: '0.8rem' }}>
-                <div>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Target Unit Price</span>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatINR(customer.propertyPrice)}</div>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Move-In Timeline</span>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{customer.moveInTimeline}</div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Property Activity Tracker Card — Live Data */}
           <div className="metric-card">
