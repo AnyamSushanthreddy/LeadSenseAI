@@ -9,6 +9,7 @@ import LeadDetailModal from './components/LeadDetailModal';
 import AddLeadModal from './components/AddLeadModal';
 import CustomerPortal from './components/CustomerPortal';
 import LoginPage from './components/LoginPage';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { calculateLeadIntelligence } from './services/scoringEngine';
@@ -251,147 +252,151 @@ export default function App() {
   // If logged in as Customer -> Show Customer Portal
   if (currentUser.role === 'customer') {
     return (
-      <div className="app-container">
-        <Navbar
-          theme={theme}
-          toggleTheme={toggleTheme}
-          currentUser={currentUser}
-          onLogout={handleLogout}
-        />
-        <main className="main-content">
-          <CustomerPortal
-            customer={currentUser.customerData || leads[0]}
+      <ErrorBoundary onReset={() => setCurrentUser(null)}>
+        <div className="app-container">
+          <Navbar
+            theme={theme}
+            toggleTheme={toggleTheme}
+            currentUser={currentUser}
             onLogout={handleLogout}
-            onUpdateCustomer={handleUpdateCustomer}
-            onDeleteCustomer={handleDeleteLead}
           />
-        </main>
-      </div>
+          <main className="main-content">
+            <CustomerPortal
+              customer={currentUser.customerData || (leads && leads.length > 0 ? leads[0] : null)}
+              onLogout={handleLogout}
+              onUpdateCustomer={handleUpdateCustomer}
+              onDeleteCustomer={handleDeleteLead}
+            />
+          </main>
+        </div>
+      </ErrorBoundary>
     );
   }
 
   // If logged in as Agent / Admin -> Show Full LeadSense-AI Dashboard
   return (
-    <div className="app-container">
-      <Navbar
-        theme={theme}
-        toggleTheme={toggleTheme}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
-        onExportCSV={handleExportCSV}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-      />
-
-      <main className="main-content">
-        <header className="dashboard-header">
-          <div className="title-row">
-            <div className="page-title">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h1>SLV Builders & Developers Lead Intelligence</h1>
-                <span className="logo-ai-tag">SLV Enterprise</span>
-              </div>
-              <p>
-                AI-powered buyer & tenant conversion scoring across <strong>SLV Lorven</strong>, <strong>SLV Paradise</strong>, <strong>SLV Residency</strong> & <strong>SLV Green Meadows</strong>. Official Partner:{' '}
-                <a
-                  href="https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}
-                >
-                  sites.google.com/slvbuilders ↗
-                </a>
-              </p>
-            </div>
-          </div>
-
-          <DashboardMetrics leads={filteredLeads} />
-        </header>
-
-        <AnalyticsCharts leads={filteredLeads} />
-
-        <Toolbar
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          priorityFilter={priorityFilter}
-          setPriorityFilter={setPriorityFilter}
-          locationFilter={locationFilter}
-          setLocationFilter={setLocationFilter}
-          loanFilter={loanFilter}
-          setLoanFilter={setLoanFilter}
-          timelineFilter={timelineFilter}
-          setTimelineFilter={setTimelineFilter}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          locations={locations}
-          onResetFilters={handleResetFilters}
+    <ErrorBoundary onReset={() => setCurrentUser(null)}>
+      <div className="app-container">
+        <Navbar
+          theme={theme}
+          toggleTheme={toggleTheme}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          onOpenAddModal={() => setIsAddModalOpen(true)}
+          onExportCSV={handleExportCSV}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
-        {viewMode === 'table' ? (
-          <LeadTable
-            leads={paginatedLeads}
-            onSelectLead={(lead) => setSelectedLead(lead)}
-            onDeleteLead={handleDeleteLead}
+        <main className="main-content">
+          <header className="dashboard-header">
+            <div className="title-row">
+              <div className="page-title">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <h1>SLV Builders & Developers Lead Intelligence</h1>
+                  <span className="logo-ai-tag">SLV Enterprise</span>
+                </div>
+                <p>
+                  AI-powered buyer & tenant conversion scoring across <strong>SLV Lorven</strong>, <strong>SLV Paradise</strong>, <strong>SLV Residency</strong> & <strong>SLV Green Meadows</strong>. Official Partner:{' '}
+                  <a
+                    href="https://sites.google.com/view/slvbuildersanddevelopers/home?pli=1"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}
+                  >
+                    sites.google.com/slvbuilders ↗
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            <DashboardMetrics leads={filteredLeads} />
+          </header>
+
+          <AnalyticsCharts leads={filteredLeads} />
+
+          <Toolbar
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            priorityFilter={priorityFilter}
+            setPriorityFilter={setPriorityFilter}
+            locationFilter={locationFilter}
+            setLocationFilter={setLocationFilter}
+            loanFilter={loanFilter}
+            setLoanFilter={setLoanFilter}
+            timelineFilter={timelineFilter}
+            setTimelineFilter={setTimelineFilter}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            locations={locations}
+            onResetFilters={handleResetFilters}
           />
-        ) : (
-          <LeadCards
-            leads={paginatedLeads}
-            onSelectLead={(lead) => setSelectedLead(lead)}
-            onDeleteLead={handleDeleteLead}
-          />
-        )}
 
-        {/* Pagination Controls */}
-        <div className="pagination-bar">
-          <div>
-            Showing <strong style={{ color: 'var(--text-primary)' }}>
-              {filteredLeads.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
-            </strong> to <strong style={{ color: 'var(--text-primary)' }}>
-              {Math.min(currentPage * pageSize, filteredLeads.length)}
-            </strong> of <strong style={{ color: 'var(--text-primary)' }}>{filteredLeads.length}</strong> ranked SLV Builder leads
+          {viewMode === 'table' ? (
+            <LeadTable
+              leads={paginatedLeads}
+              onSelectLead={(lead) => setSelectedLead(lead)}
+              onDeleteLead={handleDeleteLead}
+            />
+          ) : (
+            <LeadCards
+              leads={paginatedLeads}
+              onSelectLead={(lead) => setSelectedLead(lead)}
+              onDeleteLead={handleDeleteLead}
+            />
+          )}
+
+          {/* Pagination Controls */}
+          <div className="pagination-bar">
+            <div>
+              Showing <strong style={{ color: 'var(--text-primary)' }}>
+                {filteredLeads.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}
+              </strong> to <strong style={{ color: 'var(--text-primary)' }}>
+                {Math.min(currentPage * pageSize, filteredLeads.length)}
+              </strong> of <strong style={{ color: 'var(--text-primary)' }}>{filteredLeads.length}</strong> ranked SLV Builder leads
+            </div>
+
+            <div className="pagination-controls">
+              <button
+                className="btn btn-secondary"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                style={{ opacity: currentPage === 1 ? 0.4 : 1, padding: '0.4rem 0.8rem' }}
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0 0.5rem' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                className="btn btn-secondary"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                style={{ opacity: currentPage === totalPages ? 0.4 : 1, padding: '0.4rem 0.8rem' }}
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
+        </main>
 
-          <div className="pagination-controls">
-            <button
-              className="btn btn-secondary"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              style={{ opacity: currentPage === 1 ? 0.4 : 1, padding: '0.4rem 0.8rem' }}
-            >
-              <ChevronLeft size={16} /> Previous
-            </button>
+        {/* Modals & Slide-Over Drawers */}
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onUpdateLead={handleUpdateLead}
+          onDeleteLead={handleDeleteLead}
+        />
 
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0 0.5rem' }}>
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              className="btn btn-secondary"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              style={{ opacity: currentPage === totalPages ? 0.4 : 1, padding: '0.4rem 0.8rem' }}
-            >
-              Next <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      </main>
-
-      {/* Modals & Slide-Over Drawers */}
-      <LeadDetailModal
-        lead={selectedLead}
-        onClose={() => setSelectedLead(null)}
-        onUpdateLead={handleUpdateLead}
-        onDeleteLead={handleDeleteLead}
-      />
-
-      <AddLeadModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddLead={handleAddLead}
-        locations={locations}
-      />
-    </div>
+        <AddLeadModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onAddLead={handleAddLead}
+          locations={locations}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }
