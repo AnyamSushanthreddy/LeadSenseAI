@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Building2, ExternalLink, Calendar, ShieldCheck, CheckCircle2, Clock, MapPin,
   Sparkles, Phone, MessageSquare, Award, ArrowUpRight, Heart, DollarSign, Camera, Check, X, Trash2, Edit2, Eye, ChevronDown, ChevronUp, Star
