@@ -92,7 +92,7 @@ export function getPredictionBreakdown(lead) {
 
   let topBrowsed = null;
   let maxViews = 0;
-  if (lead?.viewedProjects && typeof lead.viewedProjects === 'object') {
+  if (lead?.viewedProjects && typeof lead.viewedProjects === 'object' && Object.keys(lead.viewedProjects).length > 0) {
     Object.entries(lead.viewedProjects).forEach(([pName, data]) => {
       const cnt = data?.count || (typeof data === 'number' ? data : 1);
       if (cnt > maxViews) {
@@ -102,8 +102,14 @@ export function getPredictionBreakdown(lead) {
     });
   }
 
+  // Fallback if viewedProjects is not passed, but propertiesViewed count > 0
+  if (!topBrowsed && (lead?.propertiesViewed > 0 || lead?.slvProject)) {
+    topBrowsed = lead.slvProject || 'SLV Lorven';
+    maxViews = lead.propertiesViewed || 1;
+  }
+
   const visitCounts = {};
-  if (Array.isArray(lead?.scheduledVisits)) {
+  if (Array.isArray(lead?.scheduledVisits) && lead.scheduledVisits.length > 0) {
     lead.scheduledVisits.forEach(v => {
       const p = v.project || v.slvProject;
       if (p) visitCounts[p] = (visitCounts[p] || 0) + 1;
@@ -118,6 +124,12 @@ export function getPredictionBreakdown(lead) {
       topVisited = pName;
     }
   });
+
+  // Fallback for site visits if siteVisits > 0 but scheduledVisits array not populated
+  if (!topVisited && lead?.siteVisits > 0) {
+    topVisited = lead.slvProject || 'SLV Lorven';
+    maxVisits = lead.siteVisits;
+  }
 
   return {
     predictedProject,

@@ -12,6 +12,14 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
   const [photoInput, setPhotoInput] = useState(lead.avatar || '');
 
+  // Keep simLead in sync with real-time database updates for this lead
+  useEffect(() => {
+    if (lead && !simActive) {
+      setSimLead({ ...lead });
+      setSimIntelligence(calculateLeadIntelligence(lead));
+    }
+  }, [lead, simActive]);
+
   // Schedule Visit States
   const SLV_PROJECT_OPTIONS = [
     'SLV Lorven (Miyapur)',
