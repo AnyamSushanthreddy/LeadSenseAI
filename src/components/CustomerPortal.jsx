@@ -142,7 +142,45 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
   const [expandedProject, setExpandedProject] = useState(null);
 
   const totalViewed = Object.keys(viewedProjects).length;
-  const totalViewCount = Object.values(viewedProjects).reduce((sum, p) => sum + p.count, 0);
+  const totalViewCount = Object.values(viewedProjects).reduce((sum, p) => sum + (p.count || 1), 0);
+
+  // Dynamic AI Prediction based on 4 Financial Metrics + Most Browsed Project + Most Site Visits
+  const dynamicPrediction = useMemo(() => {
+    let topBrowsed = null;
+    let maxViews = 0;
+    Object.entries(viewedProjects).forEach(([pName, data]) => {
+      const cnt = data?.count || (typeof data === 'number' ? data : 1);
+      if (cnt > maxViews) {
+        maxViews = cnt;
+        topBrowsed = pName;
+      }
+    });
+
+    const visitCounts = {};
+    if (Array.isArray(scheduledVisits)) {
+      scheduledVisits.forEach(v => {
+        const p = v.project || v.slvProject;
+        if (p) visitCounts[p] = (visitCounts[p] || 0) + 1;
+      });
+    }
+
+    let topVisited = null;
+    let maxVisits = 0;
+    Object.entries(visitCounts).forEach(([pName, cnt]) => {
+      if (cnt > maxVisits) {
+        maxVisits = cnt;
+        topVisited = pName;
+      }
+    });
+
+    let predicted = topVisited || topBrowsed || intel.predictedProject || 'SLV Lorven (Gachibowli)';
+
+    return {
+      predictedProject: predicted,
+      topBrowsed: topBrowsed ? `${topBrowsed} (${maxViews} views)` : 'None browsed yet',
+      topVisited: topVisited ? `${topVisited} (${maxVisits} visits)` : 'No site visits yet'
+    };
+  }, [viewedProjects, scheduledVisits, intel.predictedProject]);
 
   const handleViewProject = (projectName) => {
     const updated = {
@@ -329,7 +367,6 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
 
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '6px' }}>
                   <span className="badge badge-high">{customer.type}</span>
-                  <span className="badge badge-medium">✨ {intel.predictedProject || customer.slvProject}</span>
                 </div>
               </div>
             </div>
@@ -373,14 +410,14 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
                 </span>
               </div>
 
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                {intel.predictedProject || customer.slvProject}
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                {dynamicPrediction.predictedProject}
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.85rem' }}>
-                Algorithm match predicted from your 4 financial metrics, browsed projects & site visits:
+                Dynamic AI prediction calculated from your most browsed project, site visits done & 4 financial metrics:
               </p>
 
-              {/* 4 Prediction Factors Breakdown */}
+              {/* 4 Prediction Factors + Browsing/Visits Metrics */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', background: 'var(--bg-app)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
                 <div>
                   <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>1. Annual Income</span>
@@ -400,13 +437,15 @@ export default function CustomerPortal({ customer, onLogout, onUpdateCustomer, o
                     {customer.loanPreapproved === 'Yes' ? 'Pre-Approved ✓' : 'Pending Verification'}
                   </div>
                 </div>
-                <div>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>Browsed Projects</span>
-                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{totalViewCount} views</div>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>Site Visits Done</span>
-                  <div style={{ fontWeight: 600, marginTop: '1px' }}>{customer.siteVisits || 0} visits</div>
+                <div style={{ gridColumn: 'span 2', background: 'rgba(99,102,241,0.06)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(99,102,241,0.2)', marginTop: '2px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>🔥 Most Browsed Project:</span>
+                    <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{dynamicPrediction.topBrowsed}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem' }}>📍 Most Site Visits Done:</span>
+                    <span style={{ fontWeight: 700, color: 'var(--priority-high)' }}>{dynamicPrediction.topVisited}</span>
+                  </div>
                 </div>
               </div>
             </div>
