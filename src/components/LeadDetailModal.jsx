@@ -526,110 +526,199 @@ export default function LeadDetailModal({ lead, onClose, onUpdateLead, onDeleteL
           </div>
         </div>
 
-        {/* Interactive What-If Simulator */}
-        <div className="simulator-box">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-              <RefreshCw size={16} style={{ color: 'var(--accent-primary)' }} />
-              <span>Interactive "What-If" AI Score Simulator</span>
+        {/* Admin Interactive Client Profile & Lead Score Editor */}
+        <div style={{ background: 'var(--bg-app)', border: '1px solid var(--accent-primary)', borderRadius: 'var(--radius-lg)', padding: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-primary)' }}>
+              <RefreshCw size={18} />
+              <span>Admin Client Profile & Lead Score Editor</span>
             </div>
-            {simActive && (
-              <button className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleApplySim}>
-                Save Simulation Changes
-              </button>
-            )}
+            <button className="btn btn-primary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.82rem' }} onClick={handleApplySim}>
+              <Check size={14} /> Save Profile Changes
+            </button>
           </div>
 
-          <div className="sim-control-group">
-            <div className="sim-slider-row">
-              <label>Site Visits Attended ({simLead.siteVisits})</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.82rem' }}>
+            {/* 1. Max Investment Budget */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Max Investment Budget (₹)
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.budget || 15000000}
+                onChange={(e) => handleSimChange('budget', parseInt(e.target.value))}
+              >
+                <option value={6500000}>₹65.00 Lakh</option>
+                <option value={8500000}>₹85.00 Lakh</option>
+                <option value={11000000}>₹1.10 Crore</option>
+                <option value={15000000}>₹1.50 Crore (High Priority)</option>
+                <option value={20000000}>₹2.00 Crore (High Priority)</option>
+                <option value={30000000}>₹3.00 Crore (High Priority)</option>
+                <option value={50000000}>₹5.00 Crore+ (Ultra High Priority)</option>
+              </select>
+            </div>
+
+            {/* 2. Annual Income */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Annual Income (₹)
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.annualIncome || 3000000}
+                onChange={(e) => handleSimChange('annualIncome', parseInt(e.target.value))}
+              >
+                <option value={1200000}>₹12.00 Lakh</option>
+                <option value={1800000}>₹18.00 Lakh</option>
+                <option value={2500000}>₹25.00 Lakh</option>
+                <option value={3500000}>₹35.00 Lakh (High Priority)</option>
+                <option value={5000000}>₹50.00 Lakh+ (Ultra High Priority)</option>
+              </select>
+            </div>
+
+            {/* 3. Credit Score */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Credit Score
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.creditScore || 780}
+                onChange={(e) => handleSimChange('creditScore', parseInt(e.target.value))}
+              >
+                <option value={620}>620 (Fair)</option>
+                <option value={680}>680 (Good)</option>
+                <option value={740}>740 (Very Good)</option>
+                <option value={780}>780 (Excellent)</option>
+                <option value={820}>820+ (Exceptional)</option>
+              </select>
+            </div>
+
+            {/* 4. Bank Pre-Approval */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Bank Pre-Approval Status
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.loanPreapproved || 'Yes'}
+                onChange={(e) => handleSimChange('loanPreapproved', e.target.value)}
+              >
+                <option value="Yes">Pre-Approved ✓ (+20 pts)</option>
+                <option value="No">Pending Verification</option>
+              </select>
+            </div>
+
+            {/* 5. Move-In Timeline */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Move-In Timeline
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.moveInTimeline || '1-3 Months'}
+                onChange={(e) => handleSimChange('moveInTimeline', e.target.value)}
+              >
+                <option value="Immediate">Immediate (High Priority - 95 pts)</option>
+                <option value="1-3 Months">1-3 Months (80 pts)</option>
+                <option value="3-6 Months">3-6 Months (55 pts)</option>
+                <option value="6+ Months">6+ Months (35 pts)</option>
+              </select>
+            </div>
+
+            {/* 6. Transaction Stage */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Transaction Stage
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.transactionStage || 'Closing'}
+                onChange={(e) => handleSimChange('transactionStage', e.target.value)}
+              >
+                <option value="Closing">Closing (Ultra High - 98 pts)</option>
+                <option value="Negotiation">Negotiation (High - 88 pts)</option>
+                <option value="In Discussion">In Discussion (72 pts)</option>
+                <option value="Site Visit Scheduled">Site Visit Scheduled (65 pts)</option>
+                <option value="New">New Lead (40 pts)</option>
+              </select>
+            </div>
+
+            {/* 7. Preferred Location */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Preferred Location
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.preferredLocation || 'Gachibowli'}
+                onChange={(e) => handleSimChange('preferredLocation', e.target.value)}
+              >
+                <option value="Jubilee Hills">Jubilee Hills (Prime)</option>
+                <option value="Financial District">Financial District (Prime)</option>
+                <option value="HITECH City">HITECH City (Prime)</option>
+                <option value="Gachibowli">Gachibowli (Prime)</option>
+                <option value="Kondapur">Kondapur</option>
+                <option value="Tellapur">Tellapur</option>
+                <option value="Miyapur">Miyapur</option>
+              </select>
+            </div>
+
+            {/* 8. Property Type */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Property Type
+              </label>
+              <select
+                className="custom-select"
+                style={{ width: '100%', padding: '0.35rem 0.5rem', fontSize: '0.82rem' }}
+                value={simLead.propertyType || 'Villa'}
+                onChange={(e) => handleSimChange('propertyType', e.target.value)}
+              >
+                <option value="Villa">Villa (+10 pts Bonus)</option>
+                <option value="Penthouse">Penthouse (+10 pts Bonus)</option>
+                <option value="Apartment (3 BHK)">Apartment (3 BHK)</option>
+                <option value="Apartment (2 BHK)">Apartment (2 BHK)</option>
+              </select>
+            </div>
+
+            {/* 9. Site Visits Attended */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Site Visits Attended: {simLead.siteVisits || 0}
+              </label>
               <input
                 type="range"
                 min="0"
                 max="10"
-                value={simLead.siteVisits}
+                value={simLead.siteVisits || 0}
                 onChange={(e) => handleSimChange('siteVisits', parseInt(e.target.value))}
-                style={{ width: '180px', accentColor: 'var(--accent-primary)' }}
+                style={{ width: '100%', accentColor: 'var(--accent-primary)', marginTop: '4px' }}
               />
             </div>
 
-            <div className="sim-slider-row">
-              <label>Properties Viewed ({simLead.propertiesViewed})</label>
+            {/* 10. Properties Viewed */}
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Properties Viewed: {simLead.propertiesViewed || 0}
+              </label>
               <input
                 type="range"
-                min="1"
+                min="0"
                 max="50"
-                value={simLead.propertiesViewed}
+                value={simLead.propertiesViewed || 0}
                 onChange={(e) => handleSimChange('propertiesViewed', parseInt(e.target.value))}
-                style={{ width: '180px', accentColor: 'var(--accent-primary)' }}
+                style={{ width: '100%', accentColor: 'var(--accent-primary)', marginTop: '4px' }}
               />
             </div>
-
-            <div className="sim-slider-row">
-              <label>Loan Pre-Approval</label>
-              <select
-                className="custom-select"
-                style={{ padding: '0.2rem 1.8rem 0.2rem 0.5rem', fontSize: '0.8rem' }}
-                value={simLead.loanPreapproved}
-                onChange={(e) => handleSimChange('loanPreapproved', e.target.value)}
-              >
-                <option value="Yes">Pre-Approved (Yes)</option>
-                <option value="No">Pending (No)</option>
-              </select>
-            </div>
-
-            <div className="sim-slider-row">
-              <label>Client Phone Number</label>
-              <input
-                type="tel"
-                value={simLead.phone || ''}
-                onChange={(e) => handleSimChange('phone', e.target.value)}
-                style={{ width: '180px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.2rem 0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}
-              />
-            </div>
-
-            <div className="sim-slider-row">
-              <label>Move-In Timeline</label>
-              <select
-                className="custom-select"
-                style={{ padding: '0.2rem 1.8rem 0.2rem 0.5rem', fontSize: '0.8rem' }}
-                value={simLead.moveInTimeline}
-                onChange={(e) => handleSimChange('moveInTimeline', e.target.value)}
-              >
-                <option value="Immediate">Immediate</option>
-                <option value="1-3 Months">1-3 Months</option>
-                <option value="3-6 Months">3-6 Months</option>
-                <option value="6+ Months">6+ Months</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Profile Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'var(--bg-app)', padding: '1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', fontSize: '0.85rem' }}>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Budget</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{formatINR(simLead.budget)}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Target Property Price</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{formatINR(simLead.propertyPrice)}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Preferred Location</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{simLead.preferredLocation}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Property Type</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{simLead.propertyType}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Lead Source</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{simLead.leadSource}</div>
-          </div>
-          <div>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Transaction Stage</span>
-            <div style={{ fontWeight: 600, marginTop: '2px' }}>{simLead.transactionStage}</div>
           </div>
         </div>
       </div>
